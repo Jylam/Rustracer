@@ -21,7 +21,7 @@ fn write_image(filename: &str, w: u32, h: u32, buffer: &[Color]) -> std::io::Res
     file.write(format!("{} {}\n", w, h).as_bytes())?;
     file.write(b"255\n")?;
 
-    for y in 0..h {
+    for y in (0..h).rev() {
         for x in 0..w {
             file.write(format!("{} {} {}\n",
                                (buffer[(x+y*w) as usize].r*255.999) as u32,
@@ -54,9 +54,9 @@ fn main() {
         }
     }
 
-    let v1: Vec3 = Vec3{x:1.0, y:1.0, z:0.0};
-    let v2: Vec3 = Vec3{x:1.0, y:0.0, z:1.0};
-    let v3: Vec3 = v1+v2;
+    let v1: Vec3 = Vec3::new(1.0, 1.0, 0.0);
+    let v2: Vec3 = Vec3::new(1.0, 0.0, 1.0);
+    let v3: Vec3 = v1-v2;
 
     println!("Vec: {}", v3);
     write_image("test.ppm", IMAGE_WIDTH, IMAGE_HEIGHT, &buffer).ok();
