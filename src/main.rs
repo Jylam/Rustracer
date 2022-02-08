@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 use std::fs::File;
 use std::io::prelude::*;
+extern crate image;
 
 pub mod vec3 {
     include!("vec3.rs");
@@ -15,7 +16,7 @@ struct Color {
 }
 
 
-fn write_image(filename: &str, w: u32, h: u32, buffer: &[Color]) -> std::io::Result<()> {
+fn write_image_ppm(filename: &str, w: u32, h: u32, buffer: &[Color]) -> std::io::Result<()> {
     let mut file = File::create(filename)?;
     file.write(b"P3\n")?;
     file.write(format!("{} {}\n", w, h).as_bytes())?;
@@ -30,6 +31,16 @@ fn write_image(filename: &str, w: u32, h: u32, buffer: &[Color]) -> std::io::Res
         }
     }
     Ok(())
+}
+
+fn write_image(filename: &str, w: u32, h: u32, buffer: &[Color])  {
+    let mut buf = vec![0; buffer.len()*3];
+    for i in 0..buffer.len()-3 {
+        buf[i*3] = (buffer[i].r*255.0) as u8;
+        buf[(i*3)+1] = (buffer[i].g*255.0) as u8;
+        buf[(i*3)+2] = (buffer[i].b*255.0) as u8;
+    }
+    image::save_buffer(filename, &buf, w, h, image::ColorType::Rgb8).unwrap()
 }
 
 fn main() {
@@ -55,10 +66,6 @@ fn main() {
         }
     }
 
-    let v1: Vec3 = Vec3::new(2.0, 3.0, 4.0);
-    let v2: Vec3 = Vec3::new(5.0, 6.0, 7.0);
-    let v3: Vec3 = v1*v2;
-
-    println!("Vec: {}", v1.cross(v2));
-    write_image("test.ppm", IMAGE_WIDTH, IMAGE_HEIGHT, &buffer).ok();
+    write_image_ppm("test.ppm", IMAGE_WIDTH, IMAGE_HEIGHT, &buffer).ok();
+    write_image("test.png", IMAGE_WIDTH, IMAGE_HEIGHT, &buffer);
 }
