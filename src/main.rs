@@ -54,10 +54,10 @@ fn main() {
         }
     }
 
-    let v1: Vec3 = Vec3::new(1.0, 1.0, 0.0);
-    let v2: Vec3 = Vec3::new(1.0, 0.0, 1.0);
-    let v3: Vec3 = v1-v2;
+    let v1: Vec3 = Vec3::new(2.0, 3.0, 4.0);
+    let v2: Vec3 = Vec3::new(5.0, 6.0, 7.0);
+    let v3: Vec3 = v1*v2;
 
-    println!("Vec: {}", v3);
+    println!("Vec: {}", v1.cross(v2));
     write_image("test.ppm", IMAGE_WIDTH, IMAGE_HEIGHT, &buffer).ok();
 }
