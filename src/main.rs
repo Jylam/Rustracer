@@ -2,7 +2,10 @@
 use std::fs::File;
 use std::io::prelude::*;
 
-
+pub mod vec3 {
+    include!("vec3.rs");
+}
+use vec3::Vec3;
 #[derive(Clone)]
 #[derive(Copy)]
 struct Color {
@@ -51,6 +54,10 @@ fn main() {
         }
     }
 
+    let v1: Vec3 = Vec3{x:1.0, y:1.0, z:0.0};
+    let v2: Vec3 = Vec3{x:1.0, y:0.0, z:1.0};
+    let v3: Vec3 = v1+v2;
 
+    println!("Vec: {}", v3);
     write_image("test.ppm", IMAGE_WIDTH, IMAGE_HEIGHT, &buffer).ok();
 }
