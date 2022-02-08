@@ -1,0 +1,2 @@
+# Rustracer
+Raytracer in Rust
