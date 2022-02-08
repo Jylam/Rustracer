@@ -52,5 +52,5 @@ fn main() {
     }
 
 
-    write_image("test.ppm", IMAGE_WIDTH, IMAGE_HEIGHT, &buffer);
+    write_image("test.ppm", IMAGE_WIDTH, IMAGE_HEIGHT, &buffer).ok();
 }
