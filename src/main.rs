@@ -34,8 +34,9 @@ fn write_image(filename: &str, w: u32, h: u32, buffer: &[Color]) -> std::io::Res
 
 fn main() {
 
-    const IMAGE_WIDTH:  u32 = 256;
-    const IMAGE_HEIGHT: u32 = 256;
+    const ASPECT_RATIO: f64 = 16.0 / 9.0;
+    const IMAGE_WIDTH:  u32 = 400;
+    const IMAGE_HEIGHT: u32 = ((IMAGE_WIDTH as f64)/ASPECT_RATIO) as u32;
 
     let mut buffer = [Color{r: 0.0, g:0.0, b:0.0}; (IMAGE_WIDTH*IMAGE_HEIGHT) as usize];
 
