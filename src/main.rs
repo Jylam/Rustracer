@@ -52,16 +52,17 @@ fn main() {
     println!("Image {}x{}", IMAGE_WIDTH, IMAGE_HEIGHT);
 
 
-    for y in 0..IMAGE_HEIGHT {
+    for y in (0..IMAGE_HEIGHT).rev() {
         for x in 0..IMAGE_WIDTH {
-            let r = (x as f64) / (IMAGE_WIDTH-1) as f64;
-            let g = (y as f64) / (IMAGE_HEIGHT-1) as f64;
-            let b = 0.25;
+            let u: f64 = x as f64 / (IMAGE_WIDTH-1) as f64;
+            let v: f64 = y as f64 / (IMAGE_HEIGHT-1) as f64;
 
+            let r: Ray = Ray::new(origin, lower_left_corner + horizontal*u + vertical*v - origin);
+            let pixel_color: Color = ray_color(r);
 
-            buffer[(x+y*IMAGE_WIDTH) as usize].r = r;
-            buffer[(x+y*IMAGE_WIDTH) as usize].g = g;
-            buffer[(x+y*IMAGE_WIDTH) as usize].b = b;
+            buffer[(x+y*IMAGE_WIDTH) as usize].r = pixel_color.r();
+            buffer[(x+y*IMAGE_WIDTH) as usize].g = pixel_color.g();
+            buffer[(x+y*IMAGE_WIDTH) as usize].b = pixel_color.b();
         }
     }
 
