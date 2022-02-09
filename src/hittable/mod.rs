@@ -18,12 +18,7 @@ pub struct HitRecord {
 impl HitRecord {
     fn set_face_normal(&mut self, r: Ray, outward_normal: Vec3) {
         self.front_face = r.direction().dot(outward_normal) < 0.0;
-        if self.front_face {
-            self.normal = outward_normal;
-        } else {
-            self.normal = -outward_normal;
-        }
-        ()
+        self.normal = if self.front_face { outward_normal} else {-outward_normal};
     }
 }
 
@@ -66,7 +61,6 @@ impl Hittable for Sphere {
         rec.p = r.at(rec.t);
         let outward_normal: Vec3 = (rec.p - self.center) / self.radius;
         rec.set_face_normal(r, outward_normal);
-
 
         rec.normal = (rec.p - self.center) / self.radius;
 
