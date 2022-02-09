@@ -24,15 +24,15 @@ fn write_image(filename: &str, w: u32, h: u32, buffer: &[Color])  {
 }
 
 fn ray_color(r: Ray) -> Color {
-     let mut t: f64 = hit_sphere(Vec3::new(0.0,0.0,-1.0), 0.5, r);
+     let t: f64 = hit_sphere(Vec3::new(0.0,0.0,-1.0), 0.5, r);
      if t > 0.0 {
          let N: Vec3 = (r.at(t) - Vec3::new(0.0,0.0,-1.0)).unit();
          return Color::new(N.x()+1.0, N.y()+1.0, N.z()+1.0)*0.5;
      }
 
      let unit_direction: Vec3 = r.direction().unit() as Vec3;
-     t = 0.5*(unit_direction.y() + 1.0);
-     Color::new(1.0, 1.0, 1.0)*(1.0-t) + Color::new(0.5, 0.7, 1.0)*t
+     let t2 = 0.5*(unit_direction.y() + 1.0);
+     Color::new(1.0, 1.0, 1.0)*(1.0-t2) + Color::new(0.5, 0.7, 1.0)*t2
 }
 
 fn hit_sphere(center: Vec3, radius: f64, r: Ray) -> f64 {
