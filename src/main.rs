@@ -23,24 +23,27 @@ fn write_image(filename: &str, w: u32, h: u32, buffer: &[Color])  {
 }
 
 fn ray_color(r: Ray) -> Color {
-     if hit_sphere(Vec3::new(0.0,0.0,-1.0), 0.5, r) {
-                 return Color::new(1.0, 0.0, 0.0);
+     let mut t: f64 = hit_sphere(Vec3::new(0.0,0.0,-1.0), 0.5, r);
+     if t > 0.0 {
+         let N: Vec3 = (r.at(t) - Vec3::new(0.0,0.0,-1.0)).unit();
+         return Color::new(N.x()+1.0, N.y()+1.0, N.z()+1.0)*0.5;
      }
-    let unit_direction: Vec3 = r.direction().unit() as Vec3;
-    let t: f64 = 0.5*(unit_direction.y() + 1.0);
-    Color::new(1.0, 1.0, 1.0)*(1.0-t) + Color::new(0.5, 0.7, 1.0)*t
+
+     let unit_direction: Vec3 = r.direction().unit() as Vec3;
+     t = 0.5*(unit_direction.y() + 1.0);
+     Color::new(1.0, 1.0, 1.0)*(1.0-t) + Color::new(0.5, 0.7, 1.0)*t
 }
 
-fn hit_sphere(center: Vec3, radius: f64, r: Ray) -> bool{
+fn hit_sphere(center: Vec3, radius: f64, r: Ray) -> f64 {
     let oc: Vec3 = r.origin() - center;
     let a: f64 = r.direction().dot(r.direction());
     let b: f64 = oc.dot(r.direction()) * 2.0;
     let c: f64 = oc.dot(oc) - radius*radius;
     let discriminant: f64 = b*b - 4.0*a*c;
-    if discriminant < 0 {
+    if discriminant < 0.0 {
         return -1.0;
     } else {
-        return (-b - sqrt(discriminant) ) / (2.0*a);
+        return (-b - f64::sqrt(discriminant) ) / (2.0*a);
     }
 }
 
