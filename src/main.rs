@@ -38,7 +38,7 @@ fn ray_color(r: Ray) -> Color {
 fn hit_sphere(center: Vec3, radius: f64, r: Ray) -> f64 {
     let oc: Vec3 = r.origin() - center;
     let a: f64 = r.direction().dot(r.direction());
-    let b: f64 = oc.dot(r.direction()) * 2.0;
+    let b: f64 = 2.0 * oc.dot(r.direction());
     let c: f64 = oc.dot(oc) - radius*radius;
     let discriminant: f64 = b*b - 4.0*a*c;
     if discriminant < 0.0 {
@@ -71,6 +71,7 @@ fn main() {
 
     let start_time = SystemTime::now();
     for y in (0..IMAGE_HEIGHT).rev() {
+        print!("\rLine {}",y);
         for x in 0..IMAGE_WIDTH {
             let u: f64 = x as f64 / (IMAGE_WIDTH-1) as f64;
             let v: f64 = y as f64 / (IMAGE_HEIGHT-1) as f64;
@@ -82,6 +83,7 @@ fn main() {
             buffer[offset] = pixel_color;
         }
     }
+    println!("");
     let end_time = SystemTime::now();
 
     let s = start_time.duration_since(UNIX_EPOCH).expect("Time went backwards");

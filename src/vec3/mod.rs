@@ -86,10 +86,22 @@ impl Mul<i32> for Vec3 {
         Vec3 {x: self.x * t as f64, y: self.y * t as f64, z: self.z * t as f64}
     }
 }
+impl Mul<Vec3> for i32 {
+    type Output = Vec3;
+    fn mul(self, t: Vec3) -> Vec3 {
+        Vec3 {x: t.x * self as f64, y: t.y * self as f64, z: t.z * self as f64}
+    }
+}
 impl Mul<f64> for Vec3 {
     type Output = Vec3;
     fn mul(self, t: f64) -> Vec3 {
         Vec3 {x: self.x * t, y: self.y * t, z: self.z * t}
+    }
+}
+impl Mul<Vec3> for f64 {
+    type Output = Vec3;
+    fn mul(self, t: Vec3) -> Vec3 {
+        Vec3 {x: t.x * self as f64, y: t.y * self as f64, z: t.z * self as f64}
     }
 }
 impl Div<i32> for Vec3 {
