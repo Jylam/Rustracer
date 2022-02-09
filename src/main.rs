@@ -11,6 +11,8 @@ use crate::color::Color;
 mod ray;
 use crate::ray::Ray;
 
+mod hittable;
+use crate::hittable::Sphere;
 
 
 fn write_image(filename: &str, w: u32, h: u32, buffer: &[Color])  {
