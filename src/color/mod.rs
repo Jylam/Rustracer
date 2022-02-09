@@ -1,6 +1,5 @@
 use std::ops::Add;
 use std::ops::Sub;
-use std::ops::Neg;
 use std::ops::Mul;
 use std::ops::Div;
 use std::fmt::{self, Formatter, Display};

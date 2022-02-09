@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use std::ops::Add;
 use std::ops::Sub;
 use std::ops::Neg;
@@ -45,8 +46,7 @@ impl Vec3 {
              z: self.x*v2.y - self.y*v2.x}
     }
     pub fn unit(&self) -> Vec3 {
-        *self/self.length();
-        Vec3::new(self.x, self.y, self.z)
+        *self/self.length()
     }
 
 }

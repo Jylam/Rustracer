@@ -1,6 +1,4 @@
 #![allow(non_snake_case)]
-use std::fs::File;
-use std::io::prelude::*;
 extern crate image;
 
 mod vec3;
