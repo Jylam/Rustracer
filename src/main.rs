@@ -60,9 +60,9 @@ fn main() {
             let r: Ray = Ray::new(origin, lower_left_corner + horizontal*u + vertical*v - origin);
             let pixel_color: Color = ray_color(r);
 
-            buffer[(x+y*IMAGE_WIDTH) as usize].r = pixel_color.r();
-            buffer[(x+y*IMAGE_WIDTH) as usize].g = pixel_color.g();
-            buffer[(x+y*IMAGE_WIDTH) as usize].b = pixel_color.b();
+            buffer[(x+(IMAGE_HEIGHT-y)*IMAGE_WIDTH) as usize].r = pixel_color.r();
+            buffer[(x+(IMAGE_HEIGHT-y)*IMAGE_WIDTH) as usize].g = pixel_color.g();
+            buffer[(x+(IMAGE_HEIGHT-y)*IMAGE_WIDTH) as usize].b = pixel_color.b();
         }
     }
 
