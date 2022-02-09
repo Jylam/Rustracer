@@ -45,7 +45,8 @@ impl Vec3 {
              z: self.x*v2.y - self.y*v2.x}
     }
     pub fn unit(&self) -> Vec3 {
-        *self/self.length()
+        *self/self.length();
+        Vec3::new(self.x, self.y, self.z)
     }
 
 }
