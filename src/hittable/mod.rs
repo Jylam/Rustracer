@@ -22,6 +22,17 @@ impl HitRecord {
     }
 }
 
+pub struct Hitlist {
+    pub list: Vec<dyn Hittable>,
+}
+
+
+impl Hittable for Hitlist {
+    fn hit(&self, r: Ray, t_min: f64, t_max: f64, mut rec: HitRecord) -> bool {
+        true
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 pub struct Sphere {
     pub center: Vec3,
