@@ -1,4 +1,5 @@
 #![allow(non_snake_case)]
+use std::time::{SystemTime, UNIX_EPOCH};
 extern crate image;
 
 mod vec3;
@@ -59,7 +60,6 @@ fn main() {
     let viewport_width:  f64 = ASPECT_RATIO * viewport_height;
     let focal_length:    f64 = 1.0;
 
-
     let origin:     Vec3 = Vec3::new(0.0,            0.0,               0.0);
     let horizontal: Vec3 = Vec3::new(viewport_width, 0.0,               0.0);
     let vertical:   Vec3 = Vec3::new(0.0,            viewport_height,   0.0);
@@ -69,6 +69,7 @@ fn main() {
     println!("Image {}x{}", IMAGE_WIDTH, IMAGE_HEIGHT);
 
 
+    let start_time = SystemTime::now();
     for y in (0..IMAGE_HEIGHT).rev() {
         for x in 0..IMAGE_WIDTH {
             let u: f64 = x as f64 / (IMAGE_WIDTH-1) as f64;
@@ -81,6 +82,12 @@ fn main() {
             buffer[offset] = pixel_color;
         }
     }
+    let end_time = SystemTime::now();
+
+    let s = start_time.duration_since(UNIX_EPOCH).expect("Time went backwards");
+    let e = end_time.duration_since(UNIX_EPOCH).expect("Time went backwards");
+
+    println!("{:?}", e-s);
 
     write_image("test.png", IMAGE_WIDTH, IMAGE_HEIGHT, &buffer);
 }
