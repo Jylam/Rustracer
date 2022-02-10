@@ -21,7 +21,7 @@ use crate::hittable::World;
 mod camera;
 use crate::camera::Camera;
 
-const ASPECT_RATIO: f64 = 16.0 / 9.0;
+const ASPECT_RATIO: f64 = 4.0 / 3.0;
 const IMAGE_WIDTH:  u32 = 400;
 const IMAGE_HEIGHT: u32 = ((IMAGE_WIDTH as f64)/ASPECT_RATIO) as u32;
 
@@ -56,11 +56,11 @@ fn ray_color(r: Ray, world: &World) -> Color {
 fn main() {
 
     let mut buffer = [Color{r: 0.0, g:0.0, b:0.0}; (IMAGE_WIDTH*IMAGE_HEIGHT) as usize];
-    let samples_per_pixel  = 100;
+    let samples_per_pixel  = 10;
     let mut rng = rand::thread_rng();
 
 
-    let cam = Camera::new();
+    let cam = Camera::new(ASPECT_RATIO);
 
     println!("Image {}x{}", IMAGE_WIDTH, IMAGE_HEIGHT);
 
@@ -70,7 +70,7 @@ fn main() {
 
     let start_time = SystemTime::now();
     for y in (0..IMAGE_HEIGHT).rev() {
-        print!("\rLine {}",y);
+        print!("\rLine {}        ",y);
         io::stdout().flush().unwrap();
         for x in 0..IMAGE_WIDTH {
             let mut pixel_color: Color = Color::new(0.0, 0.0, 0.0);
