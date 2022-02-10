@@ -2,6 +2,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::io::{self, Write};
 use rand::Rng;
+extern crate term_size;
 extern crate image;
 
 mod vec3;
@@ -21,16 +22,18 @@ use crate::hittable::World;
 mod camera;
 use crate::camera::Camera;
 
-const ASPECT_RATIO: f64 = 4.0 / 3.0;
+const ASPECT_RATIO: f64 = 16.0 / 9.0;
 const IMAGE_WIDTH:  u32 = 400;
 const IMAGE_HEIGHT: u32 = ((IMAGE_WIDTH as f64)/ASPECT_RATIO) as u32;
+const MAX_DEPTH: u32 = 20;
+const SAMPLES_PER_PIXEL: u32  = 1;
 
 fn write_image(filename: &str, w: u32, h: u32, buffer: &mut [Color])  {
     let mut buf = vec![0; buffer.len()*3];
     for i in 0..buffer.len()-3 {
-        buf[i*3] =     (buffer[i].r()*255.0) as u8;
-        buf[(i*3)+1] = (buffer[i].g()*255.0) as u8;
-        buf[(i*3)+2] = (buffer[i].b()*255.0) as u8;
+        buf[i*3] =     (f64::clamp(buffer[i].r(), 0.0, 0.999)*255.0) as u8;
+        buf[(i*3)+1] = (f64::clamp(buffer[i].g(), 0.0, 0.999)*255.0) as u8;
+        buf[(i*3)+2] = (f64::clamp(buffer[i].b(), 0.0, 0.999)*255.0) as u8;
     }
     image::save_buffer(filename, &buf, w, h, image::ColorType::Rgb8).unwrap()
 }
@@ -38,14 +41,23 @@ fn write_image(filename: &str, w: u32, h: u32, buffer: &mut [Color])  {
 fn write_color(buffer: &mut [Color], x: u32, y: u32, color: Color, samples_per_pixel: u32) {
     let offset: usize = (x+((IMAGE_HEIGHT-1)-y)*IMAGE_WIDTH) as usize;
     let scale: f64    = 1.0 / samples_per_pixel as f64;
-    buffer[offset]    = color*scale;
+
+    let r = f64::sqrt(scale * color.r);
+    let g = f64::sqrt(scale * color.g);
+    let b = f64::sqrt(scale * color.b);
+
+    buffer[offset]    = Color::new(r*scale, g*scale, b*scale);
 }
 
 
-fn ray_color(r: Ray, world: &World) -> Color {
+fn ray_color(r: Ray, world: &World, depth: u32) -> Color {
+    if depth <= 0 {
+        return Color::new(0.0,0.0,0.0);
+    }
 
     if let Some(rec) = world.hit(r, 0.0, f64::INFINITY) {
-        (rec.normal + Color::new(1.0, 1.0, 1.0))*0.5
+        let target: Vec3 = rec.p + rec.normal + Vec3::random_in_unit_sphere();
+        return ray_color(Ray::new(rec.p, target - rec.p), world, depth-1) * 0.5;
     } else {
         let unit_direction = r.direction().unit();
         let t = 0.5 * (unit_direction.y() + 1.0);
@@ -53,10 +65,19 @@ fn ray_color(r: Ray, world: &World) -> Color {
     }
 
 }
+
+fn print_progress(width: usize, progress: f64) {
+
+    let count = width as f64 * progress;
+    print!("\r");
+    for _x in 0..count as u32 {
+        print!("❯");
+    }
+}
+
 fn main() {
 
     let mut buffer = [Color{r: 0.0, g:0.0, b:0.0}; (IMAGE_WIDTH*IMAGE_HEIGHT) as usize];
-    let samples_per_pixel  = 10;
     let mut rng = rand::thread_rng();
 
 
@@ -68,19 +89,29 @@ fn main() {
     world.push(Box::new(Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5)));
     world.push(Box::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0)));
 
+
+    let term_w: usize;
+    if let Some((w, _h)) = term_size::dimensions() {
+        term_w = w;
+    } else {
+        term_w = 10;
+    }
+
     let start_time = SystemTime::now();
     for y in (0..IMAGE_HEIGHT).rev() {
-        print!("\rLine {}        ",y);
+        print_progress(term_w, 1.0 - (((y+1) as f64 / IMAGE_HEIGHT as f64)));
         io::stdout().flush().unwrap();
+
         for x in 0..IMAGE_WIDTH {
             let mut pixel_color: Color = Color::new(0.0, 0.0, 0.0);
-            for _s in 0..samples_per_pixel {
+            for _s in 0..SAMPLES_PER_PIXEL {
                 let u = (x as f64 + rng.gen_range(0.0..1.0)) / (IMAGE_WIDTH-1) as f64;
                 let v = (y as f64 + rng.gen_range(0.0..1.0)) / (IMAGE_HEIGHT-1) as f64;
                 let r: Ray = cam.get_ray(u, v);
-                pixel_color = pixel_color + ray_color(r, &world);
+                let color = ray_color(r, &world, MAX_DEPTH);
+                pixel_color = pixel_color + color;
             }
-            write_color(&mut buffer, x, y, pixel_color, samples_per_pixel);
+            write_color(&mut buffer, x, y, pixel_color, SAMPLES_PER_PIXEL);
         }
     }
     println!("");

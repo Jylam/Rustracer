@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+use rand::Rng;
 use std::ops::Add;
 use std::ops::Sub;
 use std::ops::Neg;
@@ -48,6 +49,22 @@ impl Vec3 {
     }
     pub fn unit(&self) -> Vec3 {
         *self/self.length()
+    }
+    pub fn random_mm(min: f64, max: f64) -> Vec3 {
+        let mut rng = rand::thread_rng();
+        Vec3::new(rng.gen_range(min..max), rng.gen_range(min..max), rng.gen_range(min..max))
+    }
+
+    pub fn random_in_unit_sphere() -> Vec3 {
+        let mut p: Vec3;
+
+        loop {
+            p = Vec3::random_mm(-1.0,1.0);
+            if p.length_squared() >= 1.0 {
+                continue;
+            }
+            return p;
+        }
     }
 
 }
