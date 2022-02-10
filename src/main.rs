@@ -23,7 +23,7 @@ mod camera;
 use crate::camera::Camera;
 
 const ASPECT_RATIO: f64 = 16.0 / 9.0;
-const IMAGE_WIDTH:  u32 = 400;
+const IMAGE_WIDTH:  u32 = 700;
 const IMAGE_HEIGHT: u32 = ((IMAGE_WIDTH as f64)/ASPECT_RATIO) as u32;
 const MAX_DEPTH: u32 = 20;
 const SAMPLES_PER_PIXEL: u32  = 10;
@@ -56,7 +56,7 @@ fn ray_color(r: Ray, world: &World, depth: u32) -> Color {
     }
 
     if let Some(rec) = world.hit(r, 0.01, f64::INFINITY) {
-        let target: Vec3 = rec.p + rec.normal + Vec3::random_in_unit_sphere();
+        let target: Vec3 = rec.p + Vec3::random_in_hemisphere(rec.normal);
         return ray_color(Ray::new(rec.p, target - rec.p), world, depth-1) * 0.5;
     } else {
         let unit_direction = r.direction().unit();

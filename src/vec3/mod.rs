@@ -54,16 +54,22 @@ impl Vec3 {
         let mut rng = rand::thread_rng();
         Vec3::new(rng.gen_range(min..max), rng.gen_range(min..max), rng.gen_range(min..max))
     }
-
     pub fn random_in_unit_sphere() -> Vec3 {
         let mut p: Vec3;
-
         loop {
             p = Vec3::random_mm(-1.0,1.0);
             if p.length_squared() >= 1.0 {
                 continue;
             }
             return p;
+        }
+    }
+    pub fn random_in_hemisphere(normal: Vec3) -> Vec3 {
+        let in_unit_sphere: Vec3 = Vec3::random_in_unit_sphere();
+        if in_unit_sphere.dot(normal) > 0.0 {
+            return in_unit_sphere;
+        } else {
+            return -in_unit_sphere;
         }
     }
 
