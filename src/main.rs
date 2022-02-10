@@ -1,5 +1,7 @@
 #![allow(non_snake_case)]
 use std::time::{SystemTime, UNIX_EPOCH};
+use std::io::{self, Write};
+use rand::Rng;
 extern crate image;
 
 mod vec3;
@@ -19,7 +21,11 @@ use crate::hittable::World;
 mod camera;
 use crate::camera::Camera;
 
-fn write_image(filename: &str, w: u32, h: u32, buffer: &[Color])  {
+const ASPECT_RATIO: f64 = 16.0 / 9.0;
+const IMAGE_WIDTH:  u32 = 400;
+const IMAGE_HEIGHT: u32 = ((IMAGE_WIDTH as f64)/ASPECT_RATIO) as u32;
+
+fn write_image(filename: &str, w: u32, h: u32, buffer: &mut [Color])  {
     let mut buf = vec![0; buffer.len()*3];
     for i in 0..buffer.len()-3 {
         buf[i*3] =     (buffer[i].r()*255.0) as u8;
@@ -28,6 +34,13 @@ fn write_image(filename: &str, w: u32, h: u32, buffer: &[Color])  {
     }
     image::save_buffer(filename, &buf, w, h, image::ColorType::Rgb8).unwrap()
 }
+
+fn write_color(buffer: &mut [Color], x: u32, y: u32, color: Color, samples_per_pixel: u32) {
+    let offset: usize = (x+((IMAGE_HEIGHT-1)-y)*IMAGE_WIDTH) as usize;
+    let scale: f64    = 1.0 / samples_per_pixel as f64;
+    buffer[offset]    = color*scale;
+}
+
 
 fn ray_color(r: Ray, world: &World) -> Color {
 
@@ -42,21 +55,12 @@ fn ray_color(r: Ray, world: &World) -> Color {
 }
 fn main() {
 
-    const ASPECT_RATIO: f64 = 16.0 / 9.0;
-    const IMAGE_WIDTH:  u32 = 400;
-    const IMAGE_HEIGHT: u32 = ((IMAGE_WIDTH as f64)/ASPECT_RATIO) as u32;
-
     let mut buffer = [Color{r: 0.0, g:0.0, b:0.0}; (IMAGE_WIDTH*IMAGE_HEIGHT) as usize];
+    let samples_per_pixel  = 100;
+    let mut rng = rand::thread_rng();
 
-    let viewport_height: f64 = 2.0;
-    let viewport_width:  f64 = ASPECT_RATIO * viewport_height;
-    let focal_length:    f64 = 1.0;
 
-    let origin:     Vec3 = Vec3::new(0.0,            0.0,               0.0);
-    let horizontal: Vec3 = Vec3::new(viewport_width, 0.0,               0.0);
-    let vertical:   Vec3 = Vec3::new(0.0,            viewport_height,   0.0);
-    let lower_left_corner = origin - horizontal/2 - vertical/2 - Vec3::new(0.0, 0.0, focal_length);
-
+    let cam = Camera::new();
 
     println!("Image {}x{}", IMAGE_WIDTH, IMAGE_HEIGHT);
 
@@ -67,15 +71,16 @@ fn main() {
     let start_time = SystemTime::now();
     for y in (0..IMAGE_HEIGHT).rev() {
         print!("\rLine {}",y);
+        io::stdout().flush().unwrap();
         for x in 0..IMAGE_WIDTH {
-            let u: f64 = x as f64 / (IMAGE_WIDTH-1) as f64;
-            let v: f64 = y as f64 / (IMAGE_HEIGHT-1) as f64;
-
-            let r: Ray = Ray::new(origin, lower_left_corner + horizontal*u + vertical*v - origin);
-            let pixel_color: Color = ray_color(r, &world);
-
-            let offset: usize = (x+((IMAGE_HEIGHT-1)-y)*IMAGE_WIDTH) as usize;
-            buffer[offset] = pixel_color;
+            let mut pixel_color: Color = Color::new(0.0, 0.0, 0.0);
+            for _s in 0..samples_per_pixel {
+                let u = (x as f64 + rng.gen_range(0.0..1.0)) / (IMAGE_WIDTH-1) as f64;
+                let v = (y as f64 + rng.gen_range(0.0..1.0)) / (IMAGE_HEIGHT-1) as f64;
+                let r: Ray = cam.get_ray(u, v);
+                pixel_color = pixel_color + ray_color(r, &world);
+            }
+            write_color(&mut buffer, x, y, pixel_color, samples_per_pixel);
         }
     }
     println!("");
@@ -86,5 +91,5 @@ fn main() {
 
     println!("{:?}", e-s);
 
-    write_image("test.png", IMAGE_WIDTH, IMAGE_HEIGHT, &buffer);
+    write_image("test.png", IMAGE_WIDTH, IMAGE_HEIGHT, &mut buffer);
 }

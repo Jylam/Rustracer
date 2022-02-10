@@ -9,7 +9,7 @@ pub struct Camera {
 }
 
 impl Camera {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let aspect_ratio:    f64 = 16.0 / 9.0;
         let viewport_height: f64 = 2.0;
         let viewport_width:  f64 = aspect_ratio * viewport_height;
@@ -26,7 +26,7 @@ impl Camera {
         lower_left_corner: lower_left_corner}
     }
 
-    fn get_ray(&self, u: f64, v: f64) -> Ray {
+    pub fn get_ray(&self, u: f64, v: f64) -> Ray {
         Ray::new(self.origin, self.lower_left_corner + u*self.horizontal + v*self.vertical - self.origin)
     }
 
