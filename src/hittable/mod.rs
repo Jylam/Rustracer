@@ -89,9 +89,5 @@ impl Hittable for Sphere {
         rec.set_face_normal(r, outward_normal);
         Some(rec)
     }
-
-
-
-
 }
 

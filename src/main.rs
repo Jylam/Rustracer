@@ -26,7 +26,7 @@ const ASPECT_RATIO: f64 = 16.0 / 9.0;
 const IMAGE_WIDTH:  u32 = 400;
 const IMAGE_HEIGHT: u32 = ((IMAGE_WIDTH as f64)/ASPECT_RATIO) as u32;
 const MAX_DEPTH: u32 = 20;
-const SAMPLES_PER_PIXEL: u32  = 1;
+const SAMPLES_PER_PIXEL: u32  = 10;
 
 fn write_image(filename: &str, w: u32, h: u32, buffer: &mut [Color])  {
     let mut buf = vec![0; buffer.len()*3];
@@ -40,13 +40,13 @@ fn write_image(filename: &str, w: u32, h: u32, buffer: &mut [Color])  {
 
 fn write_color(buffer: &mut [Color], x: u32, y: u32, color: Color, samples_per_pixel: u32) {
     let offset: usize = (x+((IMAGE_HEIGHT-1)-y)*IMAGE_WIDTH) as usize;
-    let scale: f64    = 1.0 / samples_per_pixel as f64;
+    let scale: f64    = 1.0 / (samples_per_pixel as f64);
 
-    let r = f64::sqrt(scale * color.r);
-    let g = f64::sqrt(scale * color.g);
-    let b = f64::sqrt(scale * color.b);
+    let r = scale * color.r;
+    let g = scale * color.g;
+    let b = scale * color.b;
 
-    buffer[offset]    = Color::new(r*scale, g*scale, b*scale);
+    buffer[offset]    = Color::new(r, g, b);
 }
 
 
@@ -55,7 +55,7 @@ fn ray_color(r: Ray, world: &World, depth: u32) -> Color {
         return Color::new(0.0,0.0,0.0);
     }
 
-    if let Some(rec) = world.hit(r, 0.0, f64::INFINITY) {
+    if let Some(rec) = world.hit(r, 0.01, f64::INFINITY) {
         let target: Vec3 = rec.p + rec.normal + Vec3::random_in_unit_sphere();
         return ray_color(Ray::new(rec.p, target - rec.p), world, depth-1) * 0.5;
     } else {
