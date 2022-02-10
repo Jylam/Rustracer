@@ -1,7 +1,6 @@
 use std::boxed::Box;
 
 use crate::vec3::Vec3;
-use crate::color::Color;
 use crate::ray::Ray;
 
 pub trait Hittable {

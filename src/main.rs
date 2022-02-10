@@ -15,7 +15,6 @@ mod hittable;
 use crate::hittable::Hittable;
 use crate::hittable::Sphere;
 use crate::hittable::World;
-use crate::hittable::HitRecord;
 
 
 fn write_image(filename: &str, w: u32, h: u32, buffer: &[Color])  {
@@ -39,20 +38,6 @@ fn ray_color(r: Ray, world: &World) -> Color {
     }
 
 }
-
-fn hit_sphere(center: Vec3, radius: f64, r: Ray) -> f64 {
-    let oc: Vec3 = r.origin() - center;
-    let a: f64 = r.direction().dot(r.direction());
-    let b: f64 = 2.0 * oc.dot(r.direction());
-    let c: f64 = oc.dot(oc) - radius*radius;
-    let discriminant: f64 = b*b - 4.0*a*c;
-    if discriminant < 0.0 {
-        return -1.0;
-    } else {
-        return (-b - f64::sqrt(discriminant) ) / (2.0*a);
-    }
-}
-
 fn main() {
 
     const ASPECT_RATIO: f64 = 16.0 / 9.0;
