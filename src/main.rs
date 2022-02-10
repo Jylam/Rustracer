@@ -16,6 +16,8 @@ use crate::hittable::Hittable;
 use crate::hittable::Sphere;
 use crate::hittable::World;
 
+mod camera;
+use crate::camera::Camera;
 
 fn write_image(filename: &str, w: u32, h: u32, buffer: &[Color])  {
     let mut buf = vec![0; buffer.len()*3];
