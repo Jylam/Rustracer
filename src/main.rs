@@ -23,9 +23,9 @@ mod camera;
 use crate::camera::Camera;
 
 const ASPECT_RATIO: f64 = 16.0 / 9.0;
-const IMAGE_WIDTH:  u32 = 700;
+const IMAGE_WIDTH:  u32 = 800;
 const IMAGE_HEIGHT: u32 = ((IMAGE_WIDTH as f64)/ASPECT_RATIO) as u32;
-const MAX_DEPTH: u32 = 20;
+const MAX_DEPTH: u32 = 10;
 const SAMPLES_PER_PIXEL: u32  = 10;
 const SCALE: f64    = 1.0 / (SAMPLES_PER_PIXEL as f64);
 
@@ -77,7 +77,7 @@ fn print_progress(width: usize, progress: f64) {
 
 fn main() {
 
-    let mut buffer = [Color{r: 0.0, g:0.0, b:0.0}; (IMAGE_WIDTH*IMAGE_HEIGHT) as usize];
+    let mut buffer: Vec<Color> = vec![Color{r: 0.0, g:0.0, b:0.0}; (IMAGE_WIDTH*IMAGE_HEIGHT) as usize];
     let mut rng = rand::thread_rng();
 
 
