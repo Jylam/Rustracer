@@ -12,7 +12,10 @@ mod ray;
 use crate::ray::Ray;
 
 mod hittable;
+use crate::hittable::Hittable;
 use crate::hittable::Sphere;
+use crate::hittable::World;
+use crate::hittable::HitRecord;
 
 
 fn write_image(filename: &str, w: u32, h: u32, buffer: &[Color])  {
@@ -25,16 +28,16 @@ fn write_image(filename: &str, w: u32, h: u32, buffer: &[Color])  {
     image::save_buffer(filename, &buf, w, h, image::ColorType::Rgb8).unwrap()
 }
 
-fn ray_color(r: Ray) -> Color {
-     let t: f64 = hit_sphere(Vec3::new(0.0,0.0,-1.0), 0.5, r);
-     if t > 0.0 {
-         let N: Vec3 = (r.at(t) - Vec3::new(0.0,0.0,-1.0)).unit();
-         return Color::new(N.x()+1.0, N.y()+1.0, N.z()+1.0)*0.5;
-     }
+fn ray_color(r: Ray, world: &World) -> Color {
 
-     let unit_direction: Vec3 = r.direction().unit() as Vec3;
-     let t2 = 0.5*(unit_direction.y() + 1.0);
-     Color::new(1.0, 1.0, 1.0)*(1.0-t2) + Color::new(0.5, 0.7, 1.0)*t2
+    if let Some(rec) = world.hit(r, 0.0, f64::INFINITY) {
+        (rec.normal + Color::new(1.0, 1.0, 1.0))*0.5
+    } else {
+        let unit_direction = r.direction().unit();
+        let t = 0.5 * (unit_direction.y() + 1.0);
+        Color::new(1.0, 1.0, 1.0) +  Color::new(0.5, 0.7, 1.0) * (1.0 - t) * t
+    }
+
 }
 
 fn hit_sphere(center: Vec3, radius: f64, r: Ray) -> f64 {
@@ -70,6 +73,9 @@ fn main() {
 
     println!("Image {}x{}", IMAGE_WIDTH, IMAGE_HEIGHT);
 
+    let mut world = World::new();
+    world.push(Box::new(Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5)));
+    world.push(Box::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0)));
 
     let start_time = SystemTime::now();
     for y in (0..IMAGE_HEIGHT).rev() {
@@ -79,7 +85,7 @@ fn main() {
             let v: f64 = y as f64 / (IMAGE_HEIGHT-1) as f64;
 
             let r: Ray = Ray::new(origin, lower_left_corner + horizontal*u + vertical*v - origin);
-            let pixel_color: Color = ray_color(r);
+            let pixel_color: Color = ray_color(r, &world);
 
             let offset: usize = (x+((IMAGE_HEIGHT-1)-y)*IMAGE_WIDTH) as usize;
             buffer[offset] = pixel_color;

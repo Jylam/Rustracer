@@ -5,6 +5,7 @@ use std::ops::Neg;
 use std::ops::Mul;
 use std::ops::Div;
 use std::fmt::{self, Formatter, Display};
+use crate::color::Color;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Vec3 {
@@ -60,6 +61,12 @@ impl Add for Vec3 {
     type Output = Vec3;
     fn add(self, v2: Vec3) -> Vec3 {
         Vec3 {x: self.x + v2.x, y: self.y + v2.y, z: self.z + v2.z}
+    }
+}
+impl Add<Color> for Vec3 {
+    type Output = Color;
+    fn add(self, v2: Color) -> Color {
+        Color {r: self.x + v2.r, g: self.y + v2.g, b: self.z + v2.b}
     }
 }
 impl Sub for Vec3 {
