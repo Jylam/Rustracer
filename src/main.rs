@@ -27,6 +27,7 @@ const IMAGE_WIDTH:  u32 = 400;
 const IMAGE_HEIGHT: u32 = ((IMAGE_WIDTH as f64)/ASPECT_RATIO) as u32;
 const MAX_DEPTH: u32 = 20;
 const SAMPLES_PER_PIXEL: u32  = 10;
+const SCALE: f64    = 1.0 / (SAMPLES_PER_PIXEL as f64);
 
 fn write_image(filename: &str, w: u32, h: u32, buffer: &mut [Color])  {
     let mut buf = vec![0; buffer.len()*3];
@@ -38,13 +39,12 @@ fn write_image(filename: &str, w: u32, h: u32, buffer: &mut [Color])  {
     image::save_buffer(filename, &buf, w, h, image::ColorType::Rgb8).unwrap()
 }
 
-fn write_color(buffer: &mut [Color], x: u32, y: u32, color: Color, samples_per_pixel: u32) {
+fn write_color(buffer: &mut [Color], x: u32, y: u32, color: Color) {
     let offset: usize = (x+((IMAGE_HEIGHT-1)-y)*IMAGE_WIDTH) as usize;
-    let scale: f64    = 1.0 / (samples_per_pixel as f64);
 
-    let r = scale * color.r;
-    let g = scale * color.g;
-    let b = scale * color.b;
+    let r = f64::sqrt(SCALE * color.r);
+    let g = f64::sqrt(SCALE * color.g);
+    let b = f64::sqrt(SCALE * color.b);
 
     buffer[offset]    = Color::new(r, g, b);
 }
@@ -111,7 +111,7 @@ fn main() {
                 let color = ray_color(r, &world, MAX_DEPTH);
                 pixel_color = pixel_color + color;
             }
-            write_color(&mut buffer, x, y, pixel_color, SAMPLES_PER_PIXEL);
+            write_color(&mut buffer, x, y, pixel_color);
         }
     }
     println!("");
