@@ -9,14 +9,15 @@ pub trait Hittable {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct HitRecord {
+pub struct HitRecord<'a> {
     pub p: Vec3,
     pub normal: Vec3,
     pub t: f64,
     pub front_face: bool,
+    pub material: &'a dyn Material,
 }
 
-impl HitRecord {
+impl HitRecord<'_> {
     fn set_face_normal(&mut self, r: Ray, outward_normal: Vec3) {
         self.front_face = r.direction().dot(outward_normal) < 0.0;
         self.normal = if self.front_face { outward_normal} else {-outward_normal};
@@ -41,18 +42,19 @@ impl Hittable for World {
 
 
 #[derive(Debug, Copy, Clone)]
-pub struct Sphere {
+pub struct Sphere<'a> {
     pub center: Vec3,
     pub radius: f64,
+    pub material: &'a dyn Material,
 }
 
-impl Sphere {
-    pub fn new(c: Vec3, r: f64) -> Self {
-        Sphere{center: c, radius: r}
+impl Sphere<'_> {
+    pub fn new<'a>(c: Vec3, r: f64, mat: &'a dyn Material) -> Self {
+        Sphere{center: c, radius: r, material: mat}
     }
 }
 
-impl Hittable for Sphere {
+impl Hittable for Sphere<'_> {
     fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
 
         let oc: Vec3 = r.origin() - self.center;
@@ -81,6 +83,7 @@ impl Hittable for Sphere {
             p: p,
             normal: Vec3::new(0.0, 0.0, 0.0),
             front_face: false,
+            material: self.material,
         };
 
         let outward_normal = (rec.p - self.center) / self.radius;

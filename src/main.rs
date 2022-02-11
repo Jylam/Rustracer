@@ -21,6 +21,7 @@ use crate::hittable::World;
 
 mod material;
 use crate::material::Material;
+use crate::material::Lambertian;
 
 mod camera;
 use crate::camera::Camera;
@@ -89,9 +90,11 @@ fn main() {
 
     println!("Image {}x{}", IMAGE_WIDTH, IMAGE_HEIGHT);
 
+    let mut mat1 = Lambertian::new(Color::new(1.0, 0.5, 0.2));
+
     let mut world = World::new();
-    world.push(Box::new(Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5)));
-    world.push(Box::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0)));
+    world.push(Box::new(Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5, &mat1)));
+//    world.push(Box::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0, mat1)));
 
 
     let term_w: usize;

@@ -9,6 +9,7 @@ pub trait Material {
 }
 
 
+#[derive(Debug, Copy, Clone)]
 pub struct Lambertian {
     albedo: Color,
 
