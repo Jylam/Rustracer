@@ -2,11 +2,10 @@ use std::boxed::Box;
 
 use crate::vec3::Vec3;
 use crate::ray::Ray;
+use crate::material::Material;
 
 pub trait Hittable {
     fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
-
-
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -38,7 +37,6 @@ impl Hittable for World {
         }
         tmp_rec
     }
-
 }
 
 
@@ -82,7 +80,7 @@ impl Hittable for Sphere {
             t: root,
             p: p,
             normal: Vec3::new(0.0, 0.0, 0.0),
-            front_face: false
+            front_face: false,
         };
 
         let outward_normal = (rec.p - self.center) / self.radius;

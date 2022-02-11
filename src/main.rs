@@ -19,6 +19,9 @@ use crate::hittable::Hittable;
 use crate::hittable::Sphere;
 use crate::hittable::World;
 
+mod material;
+use crate::material::Material;
+
 mod camera;
 use crate::camera::Camera;
 
@@ -26,7 +29,7 @@ const ASPECT_RATIO: f64 = 16.0 / 9.0;
 const IMAGE_WIDTH:  u32 = 800;
 const IMAGE_HEIGHT: u32 = ((IMAGE_WIDTH as f64)/ASPECT_RATIO) as u32;
 const MAX_DEPTH: u32 = 10;
-const SAMPLES_PER_PIXEL: u32  = 10;
+const SAMPLES_PER_PIXEL: u32  = 100;
 const SCALE: f64    = 1.0 / (SAMPLES_PER_PIXEL as f64);
 
 fn write_image(filename: &str, w: u32, h: u32, buffer: &mut [Color])  {
@@ -72,6 +75,7 @@ fn print_progress(width: usize, progress: f64) {
     print!("\r");
     for _x in 0..count as u32 {
         print!("❯");
+        io::stdout().flush().unwrap();
     }
 }
 
@@ -100,7 +104,6 @@ fn main() {
     let start_time = SystemTime::now();
     for y in (0..IMAGE_HEIGHT).rev() {
         print_progress(term_w, 1.0 - (((y+1) as f64 / IMAGE_HEIGHT as f64)));
-        io::stdout().flush().unwrap();
 
         for x in 0..IMAGE_WIDTH {
             let mut pixel_color: Color = Color::new(0.0, 0.0, 0.0);
