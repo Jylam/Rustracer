@@ -1,7 +1,6 @@
 use crate::vec3::Vec3;
 use crate::ray::Ray;
 use crate::color::Color;
-use crate::hittable::Hittable;
 use crate::hittable::HitRecord;
 
 pub trait Scatter {
@@ -21,7 +20,7 @@ impl Lambertian {
 }
 
 impl Scatter for Lambertian {
-    fn scatter(&self, r_in: Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
+    fn scatter(&self, _r_in: Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
         let mut scatter_direction: Vec3 = rec.normal + Vec3::random_unit_vector();
         if scatter_direction.near_zero() {
             // Catch degenerate scatter direction

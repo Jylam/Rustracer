@@ -21,17 +21,16 @@ use crate::hittable::Sphere;
 use crate::hittable::World;
 
 mod material;
-use crate::material::Scatter;
 use crate::material::{Lambertian, Metal};
 
 mod camera;
 use crate::camera::Camera;
 
-const ASPECT_RATIO: f64 = 16.0 / 9.0;
+const ASPECT_RATIO: f64 = 4.0 / 4.0;
 const IMAGE_WIDTH:  u32 = 800;
 const IMAGE_HEIGHT: u32 = ((IMAGE_WIDTH as f64)/ASPECT_RATIO) as u32;
 const MAX_DEPTH: u32 = 10;
-const SAMPLES_PER_PIXEL: u32  = 100;
+const SAMPLES_PER_PIXEL: u32  = 1000;
 const SCALE: f64    = 1.0 / (SAMPLES_PER_PIXEL as f64);
 
 fn write_image(filename: &str, w: u32, h: u32, buffer: &mut [Color])  {
@@ -94,9 +93,9 @@ fn main() {
 
     println!("Image {}x{}", IMAGE_WIDTH, IMAGE_HEIGHT);
 
-    let mut mat1 = Rc::new(Lambertian::new(Color::new(1.0, 0.5, 0.2)));
-    let mut mat2 = Rc::new(Lambertian::new(Color::new(0.2, 1.0, 0.2)));
-    let mut mat3 = Rc::new(Metal::new(Color::new(0.8, 0.8, 0.8), 0.3));
+    let mat1 = Rc::new(Lambertian::new(Color::new(1.0, 0.5, 0.2)));
+    let mat2 = Rc::new(Lambertian::new(Color::new(0.2, 1.0, 0.2)));
+    let mat3 = Rc::new(Metal::new(Color::new(0.8, 0.8, 0.8), 0.3));
 
     let mut world = World::new();
 
