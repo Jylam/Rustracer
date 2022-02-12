@@ -4,8 +4,8 @@ use crate::color::Color;
 use crate::hittable::Hittable;
 use crate::hittable::HitRecord;
 
-pub trait Material {
-    fn scatter(&self, r_in: Ray, rec: HitRecord, attenuation: Color, scattered: Ray) -> bool;
+pub trait Scatter {
+    fn scatter(&self, r_in: Ray, rec: &HitRecord) -> Option<(Color, Ray)>;
 }
 
 
@@ -20,11 +20,14 @@ impl Lambertian {
     }
 }
 
-impl Material for Lambertian {
-    fn scatter(&self, r_in: Ray, rec: HitRecord, mut attenuation: Color, mut scattered: Ray) -> bool {
-        let scatter_direction: Vec3 = rec.normal + Vec3::random_unit_vector();
-        scattered = Ray::new(rec.p, scatter_direction);
-        attenuation = self.albedo;
-        true
+impl Scatter for Lambertian {
+    fn scatter(&self, r_in: Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
+        let mut scatter_direction: Vec3 = rec.normal + Vec3::random_unit_vector();
+        if scatter_direction.near_zero() {
+            // Catch degenerate scatter direction
+            scatter_direction = rec.normal;
+        }
+        let scattered = Ray::new(rec.p, scatter_direction);
+        Some((self.albedo, scattered))
     }
 }

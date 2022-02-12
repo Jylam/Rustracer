@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::io::{self, Write};
+use std::rc::Rc;
 use rand::Rng;
 extern crate term_size;
 extern crate image;
@@ -20,7 +21,7 @@ use crate::hittable::Sphere;
 use crate::hittable::World;
 
 mod material;
-use crate::material::Material;
+use crate::material::Scatter;
 use crate::material::Lambertian;
 
 mod camera;
@@ -60,8 +61,11 @@ fn ray_color(r: Ray, world: &World, depth: u32) -> Color {
     }
 
     if let Some(rec) = world.hit(r, 0.01, f64::INFINITY) {
-        let target: Vec3 = rec.p + Vec3::random_in_hemisphere(rec.normal);
-        return ray_color(Ray::new(rec.p, target - rec.p), world, depth-1) * 0.5;
+        if let Some((attenuation, scattered)) = rec.mat.scatter(r, &rec) {
+            attenuation * ray_color(scattered, world, depth - 1)
+        } else {
+            Color::new(0.0, 0.0, 0.0)
+        }
     } else {
         let unit_direction = r.direction().unit();
         let t = 0.5 * (unit_direction.y() + 1.0);
@@ -90,11 +94,12 @@ fn main() {
 
     println!("Image {}x{}", IMAGE_WIDTH, IMAGE_HEIGHT);
 
-    let mut mat1 = Lambertian::new(Color::new(1.0, 0.5, 0.2));
+    let mut mat1 = Rc::new(Lambertian::new(Color::new(1.0, 0.5, 0.2)));
+    let mut mat2 = Rc::new(Lambertian::new(Color::new(0.2, 1.0, 0.2)));
 
     let mut world = World::new();
-    world.push(Box::new(Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5, &mat1)));
-//    world.push(Box::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0, mat1)));
+    world.push(Box::new(Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5, mat1)));
+    world.push(Box::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0, mat2)));
 
 
     let term_w: usize;

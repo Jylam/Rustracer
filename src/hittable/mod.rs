@@ -1,23 +1,23 @@
 use std::boxed::Box;
-
+use std::rc::Rc;
 use crate::vec3::Vec3;
 use crate::ray::Ray;
-use crate::material::Material;
+use crate::material::Scatter;
 
 pub trait Hittable {
     fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
 }
 
-#[derive(Debug, Copy, Clone)]
-pub struct HitRecord<'a> {
+#[derive(Clone)]
+pub struct HitRecord {
     pub p: Vec3,
     pub normal: Vec3,
     pub t: f64,
     pub front_face: bool,
-    pub material: &'a dyn Material,
+    pub mat: Rc<dyn Scatter>,
 }
 
-impl HitRecord<'_> {
+impl HitRecord {
     fn set_face_normal(&mut self, r: Ray, outward_normal: Vec3) {
         self.front_face = r.direction().dot(outward_normal) < 0.0;
         self.normal = if self.front_face { outward_normal} else {-outward_normal};
@@ -41,20 +41,20 @@ impl Hittable for World {
 }
 
 
-#[derive(Debug, Copy, Clone)]
-pub struct Sphere<'a> {
+#[derive(Clone)]
+pub struct Sphere {
     pub center: Vec3,
     pub radius: f64,
-    pub material: &'a dyn Material,
+    mat: Rc<dyn Scatter>,
 }
 
-impl Sphere<'_> {
-    pub fn new<'a>(c: Vec3, r: f64, mat: &'a dyn Material) -> Self {
-        Sphere{center: c, radius: r, material: mat}
+impl Sphere {
+    pub fn new(c: Vec3, r: f64, mat: Rc<dyn Scatter>) -> Self {
+        Sphere{center: c, radius: r, mat: mat}
     }
 }
 
-impl Hittable for Sphere<'_> {
+impl Hittable for Sphere {
     fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
 
         let oc: Vec3 = r.origin() - self.center;
@@ -83,7 +83,7 @@ impl Hittable for Sphere<'_> {
             p: p,
             normal: Vec3::new(0.0, 0.0, 0.0),
             front_face: false,
-            material: self.material,
+            mat: self.mat.clone(),
         };
 
         let outward_normal = (rec.p - self.center) / self.radius;
