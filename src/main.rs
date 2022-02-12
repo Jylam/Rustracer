@@ -22,7 +22,7 @@ use crate::hittable::World;
 
 mod material;
 use crate::material::Scatter;
-use crate::material::Lambertian;
+use crate::material::{Lambertian, Metal};
 
 mod camera;
 use crate::camera::Camera;
@@ -96,10 +96,13 @@ fn main() {
 
     let mut mat1 = Rc::new(Lambertian::new(Color::new(1.0, 0.5, 0.2)));
     let mut mat2 = Rc::new(Lambertian::new(Color::new(0.2, 1.0, 0.2)));
+    let mut mat3 = Rc::new(Metal::new(Color::new(0.8, 0.8, 0.8)));
 
     let mut world = World::new();
+
     world.push(Box::new(Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5, mat1)));
     world.push(Box::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0, mat2)));
+    world.push(Box::new(Sphere::new(Vec3::new(-1.0, 0.0, -1.0), 0.5, mat3)));
 
 
     let term_w: usize;
