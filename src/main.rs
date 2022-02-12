@@ -26,11 +26,11 @@ use crate::material::{Lambertian, Metal, Dielectric};
 mod camera;
 use crate::camera::Camera;
 
-const ASPECT_RATIO: f64 = 4.0 / 3.0;
+const ASPECT_RATIO: f64 = 4.0 / 4.0;
 const IMAGE_WIDTH:  u32 = 800;
 const IMAGE_HEIGHT: u32 = ((IMAGE_WIDTH as f64)/ASPECT_RATIO) as u32;
 const MAX_DEPTH: u32 = 10;
-const SAMPLES_PER_PIXEL: u32  = 10;
+const SAMPLES_PER_PIXEL: u32  = 100;
 const SCALE: f64    = 1.0 / (SAMPLES_PER_PIXEL as f64);
 
 fn write_image(filename: &str, w: u32, h: u32, buffer: &mut [Color])  {
@@ -89,22 +89,24 @@ fn main() {
     let mut rng = rand::thread_rng();
 
 
-    let cam = Camera::new(ASPECT_RATIO);
+    let cam = Camera::new(Vec3::new(-2.0,2.0,1.0), Vec3::new(0.0,0.0,-1.0), Vec3::new(0.0,1.0,0.0), 90.0, ASPECT_RATIO);
 
     println!("Image {}x{}", IMAGE_WIDTH, IMAGE_HEIGHT);
 
-    let mat1 = Rc::new(Lambertian::new(Color::new(1.0, 0.5, 0.2)));
-    let mat2 = Rc::new(Lambertian::new(Color::new(0.2, 1.0, 0.2)));
-    let mat3 = Rc::new(Metal::new(Color::new(0.8, 0.8, 0.8), 0.3));
-    let mat4 = Rc::new(Dielectric::new(1.5));
+    let mat_lambert = Rc::new(Lambertian::new(Color::new(0.1, 0.2, 0.5)));
+    let mat_ground = Rc::new(Lambertian::new(Color::new(0.8, 0.8, 0.0)));
+    let mat_metal = Rc::new(Metal::new(Color::new(0.8, 0.6, 0.2), 0.0));
+    let mat_glass = Rc::new(Dielectric::new(1.5));
+    let mat_glass2 = Rc::new(Dielectric::new(1.5));
 
     let mut world = World::new();
 
-    world.push(Box::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0, mat2)));
+    world.push(Box::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0, mat_ground)));
 
-    world.push(Box::new(Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5, mat1)));
-    world.push(Box::new(Sphere::new(Vec3::new(-1.0, 0.0, -1.0), 0.5, mat3)));
-    world.push(Box::new(Sphere::new(Vec3::new(1.0, 0.0, -1.0), 0.5, mat4)));
+    world.push(Box::new(Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5, mat_lambert)));
+    world.push(Box::new(Sphere::new(Vec3::new(1.0, 0.0, -1.0), 0.5, mat_metal)));
+    world.push(Box::new(Sphere::new(Vec3::new(-1.0, 0.5, -1.0), 0.5, mat_glass)));
+    world.push(Box::new(Sphere::new(Vec3::new(-1.0, 0.5, -1.0), -0.45, mat_glass2)));
 
 
     let term_w: usize;

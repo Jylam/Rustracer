@@ -1,5 +1,3 @@
-use rand::Rng;
-
 use crate::vec3::Vec3;
 use crate::ray::Ray;
 use crate::color::Color;
@@ -87,7 +85,7 @@ impl Scatter for Dielectric {
 
         let cannot_refract = refraction_ratio * sin_theta > 1.0;
         let direction;
-        if cannot_refract || Dielectric::reflectance(cos_theta, refraction_ratio) > rand::thread_rng().gen_range(0.0..1.0) as f64 {
+        if cannot_refract || Dielectric::reflectance(cos_theta, refraction_ratio) > fastrand::f64() {
             direction = Vec3::reflect(unit_direction, rec.normal);
         } else {
             direction = Vec3::refract(unit_direction, rec.normal, refraction_ratio);

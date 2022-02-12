@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-use rand::Rng;
 use std::ops::Add;
 use std::ops::Sub;
 use std::ops::Neg;
@@ -51,8 +50,11 @@ impl Vec3 {
         *self/self.length()
     }
     pub fn random_mm(min: f64, max: f64) -> Vec3 {
-        let mut rng = rand::thread_rng();
-        Vec3::new(rng.gen_range(min..max), rng.gen_range(min..max), rng.gen_range(min..max))
+        let rng = fastrand::Rng::new();
+        let rx = (rng.f64()*(max-min))-max;
+        let ry = (rng.f64()*(max-min))-max;
+        let rz = (rng.f64()*(max-min))-max;
+        Vec3::new(rx, ry, rz)
     }
     pub fn random_in_unit_sphere() -> Vec3 {
         let mut p: Vec3;
