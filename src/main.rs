@@ -26,7 +26,7 @@ use crate::material::{Lambertian, Metal, Dielectric};
 mod camera;
 use crate::camera::Camera;
 
-const ASPECT_RATIO: f64 = 4.0 / 4.0;
+const ASPECT_RATIO: f64 = 4.0 / 3.0;
 const IMAGE_WIDTH:  u32 = 800;
 const IMAGE_HEIGHT: u32 = ((IMAGE_WIDTH as f64)/ASPECT_RATIO) as u32;
 const MAX_DEPTH: u32 = 10;
@@ -88,8 +88,14 @@ fn main() {
     let mut buffer: Vec<Color> = vec![Color{r: 0.0, g:0.0, b:0.0}; (IMAGE_WIDTH*IMAGE_HEIGHT) as usize];
     let mut rng = rand::thread_rng();
 
+    let lookfrom: Vec3 = Vec3::new(3.0,3.0,2.0);
+    let lookat: Vec3 = Vec3::new(0.0,0.0,-1.0);
+    let vup: Vec3 = Vec3::new(0.0,1.0,0.0);
 
-    let cam = Camera::new(Vec3::new(-2.0,2.0,1.0), Vec3::new(0.0,0.0,-1.0), Vec3::new(0.0,1.0,0.0), 90.0, ASPECT_RATIO);
+
+    let cam = Camera::new(lookfrom, lookat, vup, 20.0, ASPECT_RATIO,
+    0.5, // Aperture
+    (lookfrom-lookat).length()); // Dist to focus
 
     println!("Image {}x{}", IMAGE_WIDTH, IMAGE_HEIGHT);
 

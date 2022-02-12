@@ -77,6 +77,17 @@ impl Vec3 {
             return -in_unit_sphere;
         }
     }
+
+    pub fn random_in_unit_disk() -> Vec3 {
+        let rng = fastrand::Rng::new();
+        loop {
+            let p = Vec3::new((rng.f64()*(1.0-(-1.0)))-1.0, (rng.f64()*(1.0-(-1.0)))-1.0 , 0.0);
+            if p.length_squared() >= 1.0 {
+                continue;
+            }
+            return p;
+        }
+    }
     pub fn near_zero(self) -> bool {
         const EPS: f64 = 1.0e-8;
         self.x.abs() < EPS && self.y.abs() < EPS && self.z.abs() < EPS
