@@ -96,7 +96,7 @@ fn main() {
 
     let mut mat1 = Rc::new(Lambertian::new(Color::new(1.0, 0.5, 0.2)));
     let mut mat2 = Rc::new(Lambertian::new(Color::new(0.2, 1.0, 0.2)));
-    let mut mat3 = Rc::new(Metal::new(Color::new(0.8, 0.8, 0.8)));
+    let mut mat3 = Rc::new(Metal::new(Color::new(0.8, 0.8, 0.8), 0.3));
 
     let mut world = World::new();
 
