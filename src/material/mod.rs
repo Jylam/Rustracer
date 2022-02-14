@@ -3,7 +3,7 @@ use crate::ray::Ray;
 use crate::color::Color;
 use crate::hittable::HitRecord;
 
-pub trait Scatter {
+pub trait Scatter: Send + Sync {
     fn scatter(&self, r_in: Ray, rec: &HitRecord) -> Option<(Color, Ray)>;
 }
 

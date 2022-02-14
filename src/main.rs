@@ -1,7 +1,8 @@
 #![allow(non_snake_case)]
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::io::{self, Write};
-use std::rc::Rc;
+use std::sync::Arc;
+use std::thread;
 use rand::Rng;
 extern crate term_size;
 extern crate image;
@@ -27,10 +28,10 @@ mod camera;
 use crate::camera::Camera;
 
 const ASPECT_RATIO: f64 = 4.0 / 3.0;
-const IMAGE_WIDTH:  u32 = 800;
+const IMAGE_WIDTH:  u32 = 400;
 const IMAGE_HEIGHT: u32 = ((IMAGE_WIDTH as f64)/ASPECT_RATIO) as u32;
-const MAX_DEPTH: u32 = 10;
-const SAMPLES_PER_PIXEL: u32  = 100;
+const MAX_DEPTH: u32 = 50;
+const SAMPLES_PER_PIXEL: u32  = 10;
 const SCALE: f64    = 1.0 / (SAMPLES_PER_PIXEL as f64);
 
 fn write_image(filename: &str, w: u32, h: u32, buffer: &mut [Color])  {
@@ -40,7 +41,8 @@ fn write_image(filename: &str, w: u32, h: u32, buffer: &mut [Color])  {
         buf[(i*3)+1] = (f64::clamp(buffer[i].g(), 0.0, 0.999)*255.0) as u8;
         buf[(i*3)+2] = (f64::clamp(buffer[i].b(), 0.0, 0.999)*255.0) as u8;
     }
-    image::save_buffer(filename, &buf, w, h, image::ColorType::Rgb8).unwrap()
+    image::save_buffer(filename, &buf, w, h, image::ColorType::Rgb8).unwrap();
+    println!("Saved {}", filename);
 }
 
 fn write_color(buffer: &mut [Color], x: u32, y: u32, color: Color) {
@@ -86,34 +88,55 @@ fn print_progress(width: usize, progress: f64) {
 fn main() {
 
     let mut buffer: Vec<Color> = vec![Color{r: 0.0, g:0.0, b:0.0}; (IMAGE_WIDTH*IMAGE_HEIGHT) as usize];
-    let mut rng = rand::thread_rng();
 
-    let lookfrom: Vec3 = Vec3::new(3.0,3.0,2.0);
-    let lookat: Vec3 = Vec3::new(0.0,0.0,-1.0);
+    let lookfrom: Vec3 = Vec3::new(13.0,2.0,3.0);
+    let lookat: Vec3 = Vec3::new(0.0,0.0,0.0);
     let vup: Vec3 = Vec3::new(0.0,1.0,0.0);
 
 
     let cam = Camera::new(lookfrom, lookat, vup, 20.0, ASPECT_RATIO,
-    0.5, // Aperture
-    (lookfrom-lookat).length()); // Dist to focus
+    0.1, // Aperture
+    10.0); // Dist to focus
 
     println!("Image {}x{}", IMAGE_WIDTH, IMAGE_HEIGHT);
 
-    let mat_lambert = Rc::new(Lambertian::new(Color::new(0.1, 0.2, 0.5)));
-    let mat_ground = Rc::new(Lambertian::new(Color::new(0.8, 0.8, 0.0)));
-    let mat_metal = Rc::new(Metal::new(Color::new(0.8, 0.6, 0.2), 0.0));
-    let mat_glass = Rc::new(Dielectric::new(1.5));
-    let mat_glass2 = Rc::new(Dielectric::new(1.5));
+    let mat_lambert = Arc::new(Lambertian::new(Color::new(0.1, 0.2, 0.5)));
+    let mat_ground = Arc::new(Lambertian::new(Color::new(0.5, 0.5, 0.5)));
+    let mat_metal = Arc::new(Metal::new(Color::new(0.8, 0.6, 0.2), 0.0));
+    let mat_glass = Arc::new(Dielectric::new(1.5));
+
+
 
     let mut world = World::new();
 
-    world.push(Box::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0, mat_ground)));
+    world.push(Box::new(Sphere::new(Vec3::new(0.0, -1000.0, -0.0), 1000.0, mat_ground)));
 
-    world.push(Box::new(Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5, mat_lambert)));
-    world.push(Box::new(Sphere::new(Vec3::new(1.0, 0.0, -1.0), 0.5, mat_metal)));
-    world.push(Box::new(Sphere::new(Vec3::new(-1.0, 0.5, -1.0), 0.5, mat_glass)));
-    world.push(Box::new(Sphere::new(Vec3::new(-1.0, 0.5, -1.0), -0.45, mat_glass2)));
+    world.push(Box::new(Sphere::new(Vec3::new(-4.0, 1.0, 0.0), 1.0, mat_lambert)));
+    world.push(Box::new(Sphere::new(Vec3::new(4.0, 1.0, 0.0), 1.0, mat_metal)));
 
+    world.push(Box::new(Sphere::new(Vec3::new(0.0, 1.0, 0.0), 1.0, mat_glass.clone())));
+    world.push(Box::new(Sphere::new(Vec3::new(0.0, 1.0, 0.0), -0.95, mat_glass.clone())));
+
+    for a in -11..11 {
+        for b in -11..11 {
+            let choose_mat: f64 = fastrand::f64();
+            let center: Vec3 = Vec3::new(a as f64 + 0.9*fastrand::f64(), 0.2, b as f64 + 0.9*fastrand::f64());
+              if (center - Vec3::new(4.0, 0.2, 0.0)).length() > 0.9 {
+
+                  if choose_mat < 0.8 {
+                    let sphere_material = Arc::new(Lambertian::new(Color::new(fastrand::f64(), fastrand::f64(), fastrand::f64())));
+                    world.push(Box::new(Sphere::new(center, 0.2, sphere_material)));
+                  } else if choose_mat < 0.95 {
+                    let sphere_material = Arc::new(Metal::new(Color::new(fastrand::f64(), fastrand::f64(), fastrand::f64()), 0.0));
+                    world.push(Box::new(Sphere::new(center, 0.2, sphere_material)));
+                  } else {
+                    let sphere_material = Arc::new(Dielectric::new(1.5));
+                    world.push(Box::new(Sphere::new(center, 0.2, sphere_material)));
+                  }
+              }
+
+        }
+    }
 
     let term_w: usize;
     if let Some((w, _h)) = term_size::dimensions() {
@@ -127,6 +150,9 @@ fn main() {
         print_progress(term_w, 1.0 - (((y+1) as f64 / IMAGE_HEIGHT as f64)));
 
         for x in 0..IMAGE_WIDTH {
+
+            let handle = thread::spawn(|| {
+    let mut rng = rand::thread_rng();
             let mut pixel_color: Color = Color::new(0.0, 0.0, 0.0);
             for _s in 0..SAMPLES_PER_PIXEL {
                 let u = (x as f64 + rng.gen_range(0.0..1.0)) / (IMAGE_WIDTH-1) as f64;
@@ -136,6 +162,9 @@ fn main() {
                 pixel_color = pixel_color + color;
             }
             write_color(&mut buffer, x, y, pixel_color);
+            });
+
+
         }
     }
     println!("");
@@ -145,6 +174,6 @@ fn main() {
     let e = end_time.duration_since(UNIX_EPOCH).expect("Time went backwards");
 
     println!("{:?}", e-s);
-
-    write_image("test.png", IMAGE_WIDTH, IMAGE_HEIGHT, &mut buffer);
+    let i = 0;
+    write_image(&format!("test_{:04}.png", i).to_string(), IMAGE_WIDTH, IMAGE_HEIGHT, &mut buffer);
 }

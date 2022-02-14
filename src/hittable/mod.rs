@@ -1,10 +1,10 @@
 use std::boxed::Box;
-use std::rc::Rc;
+use std::sync::Arc;
 use crate::vec3::Vec3;
 use crate::ray::Ray;
 use crate::material::Scatter;
 
-pub trait Hittable {
+pub trait Hittable: Send + Sync {
     fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
 }
 
@@ -14,7 +14,7 @@ pub struct HitRecord {
     pub normal: Vec3,
     pub t: f64,
     pub front_face: bool,
-    pub mat: Rc<dyn Scatter>,
+    pub mat: Arc<dyn Scatter>,
 }
 
 impl HitRecord {
@@ -45,11 +45,11 @@ impl Hittable for World {
 pub struct Sphere {
     pub center: Vec3,
     pub radius: f64,
-    mat: Rc<dyn Scatter>,
+    mat: Arc<dyn Scatter>,
 }
 
 impl Sphere {
-    pub fn new(c: Vec3, r: f64, mat: Rc<dyn Scatter>) -> Self {
+    pub fn new(c: Vec3, r: f64, mat: Arc<dyn Scatter>) -> Self {
         Sphere{center: c, radius: r, mat: mat}
     }
 }
