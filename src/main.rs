@@ -3,7 +3,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use std::io::{self, Write};
 use std::sync::Arc;
 use std::thread;
+use threadpool::ThreadPool;
+use std::sync::mpsc;
 use rand::Rng;
+
 extern crate term_size;
 extern crate image;
 
@@ -31,7 +34,7 @@ const ASPECT_RATIO: f64 = 4.0 / 3.0;
 const IMAGE_WIDTH:  u32 = 400;
 const IMAGE_HEIGHT: u32 = ((IMAGE_WIDTH as f64)/ASPECT_RATIO) as u32;
 const MAX_DEPTH: u32 = 50;
-const SAMPLES_PER_PIXEL: u32  = 10;
+const SAMPLES_PER_PIXEL: u32  = 100;
 const SCALE: f64    = 1.0 / (SAMPLES_PER_PIXEL as f64);
 
 fn write_image(filename: &str, w: u32, h: u32, buffer: &mut [Color])  {
@@ -45,7 +48,7 @@ fn write_image(filename: &str, w: u32, h: u32, buffer: &mut [Color])  {
     println!("Saved {}", filename);
 }
 
-fn write_color(buffer: &mut [Color], x: u32, y: u32, color: Color) {
+fn put_pixel(buffer: &mut [Color], x: u32, y: u32, color: Color) {
     let offset: usize = (x+((IMAGE_HEIGHT-1)-y)*IMAGE_WIDTH) as usize;
 
     let r = f64::sqrt(SCALE * color.r);
@@ -85,27 +88,13 @@ fn print_progress(width: usize, progress: f64) {
     }
 }
 
-fn main() {
+fn create_world(seed: u64) -> World {
 
-    let mut buffer: Vec<Color> = vec![Color{r: 0.0, g:0.0, b:0.0}; (IMAGE_WIDTH*IMAGE_HEIGHT) as usize];
-
-    let lookfrom: Vec3 = Vec3::new(13.0,2.0,3.0);
-    let lookat: Vec3 = Vec3::new(0.0,0.0,0.0);
-    let vup: Vec3 = Vec3::new(0.0,1.0,0.0);
-
-
-    let cam = Camera::new(lookfrom, lookat, vup, 20.0, ASPECT_RATIO,
-    0.1, // Aperture
-    10.0); // Dist to focus
-
-    println!("Image {}x{}", IMAGE_WIDTH, IMAGE_HEIGHT);
-
+    fastrand::seed(seed);
     let mat_lambert = Arc::new(Lambertian::new(Color::new(0.1, 0.2, 0.5)));
     let mat_ground = Arc::new(Lambertian::new(Color::new(0.5, 0.5, 0.5)));
     let mat_metal = Arc::new(Metal::new(Color::new(0.8, 0.6, 0.2), 0.0));
     let mat_glass = Arc::new(Dielectric::new(1.5));
-
-
 
     let mut world = World::new();
 
@@ -134,9 +123,27 @@ fn main() {
                     world.push(Box::new(Sphere::new(center, 0.2, sphere_material)));
                   }
               }
-
         }
     }
+    world
+}
+
+fn main() {
+
+    let mut buffer: Vec<Color> = vec![Color{r: 0.0, g:0.0, b:0.0}; (IMAGE_WIDTH*IMAGE_HEIGHT) as usize];
+
+    let lookfrom: Vec3 = Vec3::new(13.0,2.0,3.0);
+    let lookat: Vec3 = Vec3::new(0.0,0.0,0.0);
+    let vup: Vec3 = Vec3::new(0.0,1.0,0.0);
+
+
+    let mut cam = Camera::new(lookfrom, lookat, vup, 20.0, ASPECT_RATIO,
+                          0.1, // Aperture
+                          10.0); // Dist to focus
+
+
+    println!("Image {}x{}", IMAGE_WIDTH, IMAGE_HEIGHT);
+
 
     let term_w: usize;
     if let Some((w, _h)) = term_size::dimensions() {
@@ -145,35 +152,65 @@ fn main() {
         term_w = 10;
     }
 
-    let start_time = SystemTime::now();
-    for y in (0..IMAGE_HEIGHT).rev() {
-        print_progress(term_w, 1.0 - (((y+1) as f64 / IMAGE_HEIGHT as f64)));
 
-        for x in 0..IMAGE_WIDTH {
+    let n_workers = 4;
+    let pool = ThreadPool::new(n_workers);
+    let (tx, rx) = mpsc::channel();
 
-            let handle = thread::spawn(|| {
-    let mut rng = rand::thread_rng();
-            let mut pixel_color: Color = Color::new(0.0, 0.0, 0.0);
-            for _s in 0..SAMPLES_PER_PIXEL {
-                let u = (x as f64 + rng.gen_range(0.0..1.0)) / (IMAGE_WIDTH-1) as f64;
-                let v = (y as f64 + rng.gen_range(0.0..1.0)) / (IMAGE_HEIGHT-1) as f64;
-                let r: Ray = cam.get_ray(u, v);
-                let color = ray_color(r, &world, MAX_DEPTH);
-                pixel_color = pixel_color + color;
-            }
-            write_color(&mut buffer, x, y, pixel_color);
+
+    let seed: u64 = 7;
+
+    let mut angle: f64 = 0.0;
+    let sx: f64 = 15.0;
+    let sz: f64 = 3.0;
+    for i in 0..1 {
+
+        let start_time = SystemTime::now();
+
+        angle+=3.6;
+        let cx = sx * f64::cos(angle.to_radians()) - sz*f64::sin(angle.to_radians());
+        let cz = sx * f64::sin(angle.to_radians()) - sz*f64::cos(angle.to_radians());
+        cam.set_position(Vec3::new(cx, 2.0, cz));
+        for y in (0..IMAGE_HEIGHT).rev() {
+            let world = create_world(seed);
+
+            let tx2 = tx.clone();
+            pool.execute(move|| {
+                for x in 0..IMAGE_WIDTH {
+
+                    let mut rng = rand::thread_rng();
+                    let mut pixel_color: Color = Color::new(0.0, 0.0, 0.0);
+                    for _s in 0..SAMPLES_PER_PIXEL {
+                        let u = (x as f64 + rng.gen_range(0.0..1.0)) / (IMAGE_WIDTH-1) as f64;
+                        let v = (y as f64 + rng.gen_range(0.0..1.0)) / (IMAGE_HEIGHT-1) as f64;
+                        let r: Ray = cam.clone().get_ray(u, v);
+                        let color = ray_color(r, &world, MAX_DEPTH);
+                        pixel_color = pixel_color + color;
+                    }
+                    tx2.send((x,y, pixel_color)).unwrap();
+                }
             });
-
-
         }
+        let mut pixel_count: u64 = 0;
+        for received in &rx {
+            let (tx, ty, tc) = received;
+            pixel_count+=1;
+            if pool.active_count() == 1 {
+                break;
+            }
+            put_pixel(&mut buffer, tx, ty, tc);
+            print_progress(term_w, (((pixel_count+1) as f64 / (IMAGE_WIDTH*IMAGE_HEIGHT) as f64)));
+        }
+        let end_time = SystemTime::now();
+
+        let s = start_time.duration_since(UNIX_EPOCH).expect("Time went backwards");
+        let e = end_time.duration_since(UNIX_EPOCH).expect("Time went backwards");
+
+        println!("{:?}", e-s);
+        println!("");
+        write_image(&format!("test_{:04}.png", i).to_string(), IMAGE_WIDTH, IMAGE_HEIGHT, &mut buffer);
+
     }
-    println!("");
-    let end_time = SystemTime::now();
 
-    let s = start_time.duration_since(UNIX_EPOCH).expect("Time went backwards");
-    let e = end_time.duration_since(UNIX_EPOCH).expect("Time went backwards");
 
-    println!("{:?}", e-s);
-    let i = 0;
-    write_image(&format!("test_{:04}.png", i).to_string(), IMAGE_WIDTH, IMAGE_HEIGHT, &mut buffer);
 }
