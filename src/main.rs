@@ -34,7 +34,7 @@ const ASPECT_RATIO: f64 = 4.0 / 3.0;
 const IMAGE_WIDTH:  u32 = 400;
 const IMAGE_HEIGHT: u32 = ((IMAGE_WIDTH as f64)/ASPECT_RATIO) as u32;
 const MAX_DEPTH: u32 = 50;
-const SAMPLES_PER_PIXEL: u32  = 100;
+const SAMPLES_PER_PIXEL: u32  = 10;
 const SCALE: f64    = 1.0 / (SAMPLES_PER_PIXEL as f64);
 
 fn write_image(filename: &str, w: u32, h: u32, buffer: &mut [Color])  {
@@ -191,15 +191,15 @@ fn main() {
                 }
             });
         }
-        let mut pixel_count: u64 = 0;
+        let mut pixel_count: u32 = 0;
         for received in &rx {
             let (tx, ty, tc) = received;
             pixel_count+=1;
-            if pool.active_count() == 1 {
+            if pixel_count == IMAGE_WIDTH*IMAGE_HEIGHT {
                 break;
             }
             put_pixel(&mut buffer, tx, ty, tc);
-            print_progress(term_w, (((pixel_count+1) as f64 / (IMAGE_WIDTH*IMAGE_HEIGHT) as f64)));
+            print_progress(term_w, (pixel_count+1) as f64 / (IMAGE_WIDTH*IMAGE_HEIGHT) as f64);
         }
         let end_time = SystemTime::now();
 
