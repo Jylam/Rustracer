@@ -2,9 +2,8 @@
 use std::time::Instant;
 use std::io::{self, Write};
 use std::sync::Arc;
-use threadpool::ThreadPool;
 use std::sync::mpsc;
-use rand::Rng;
+use threadpool::ThreadPool;
 
 extern crate term_size;
 extern crate image;
@@ -33,7 +32,7 @@ const ASPECT_RATIO: f64 = 4.0 / 3.0;
 const IMAGE_WIDTH:  u32 = 800;
 const IMAGE_HEIGHT: u32 = ((IMAGE_WIDTH as f64)/ASPECT_RATIO) as u32;
 const MAX_DEPTH: u32 = 50;
-const SAMPLES_PER_PIXEL: u32  = 10;
+const SAMPLES_PER_PIXEL: u32  = 25;
 const SCALE: f64    = 1.0 / (SAMPLES_PER_PIXEL as f64);
 
 fn write_image(filename: &str, w: u32, h: u32, buffer: &mut [Color])  {
@@ -130,12 +129,12 @@ fn create_world(seed: u64) -> World {
 
 fn compute_pixel(x: u32, y: u32, cam: Camera, world: &World) -> Color {
 
-    let mut rng = rand::thread_rng();
+    let rng = fastrand::Rng::new();
     let mut pixel_color: Color = Color::new(0.0, 0.0, 0.0);
 
     for _s in 0..SAMPLES_PER_PIXEL {
-        let u = (x as f64 + rng.gen_range(0.0..1.0)) / (IMAGE_WIDTH-1) as f64;
-        let v = (y as f64 + rng.gen_range(0.0..1.0)) / (IMAGE_HEIGHT-1) as f64;
+        let u = (x as f64 + rng.f64()) / (IMAGE_WIDTH-1) as f64;
+        let v = (y as f64 + rng.f64()) / (IMAGE_HEIGHT-1) as f64;
         let r: Ray = cam.get_ray(u, v);
         let color = ray_color(r, world, MAX_DEPTH);
         pixel_color = pixel_color + color;
@@ -170,7 +169,7 @@ fn main() {
     }
 
 
-    let n_workers = 4;
+    let n_workers = 6;
     let pool = ThreadPool::new(n_workers);
     let (tx, rx) = mpsc::channel();
 
