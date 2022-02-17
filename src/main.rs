@@ -49,6 +49,7 @@ fn write_image(filename: &str, w: u32, h: u32, buffer: &mut [Color])  {
 fn put_pixel(buffer: &mut [Color], x: u32, y: u32, color: Color) {
     let offset: usize = (x+((IMAGE_HEIGHT-1)-y)*IMAGE_WIDTH) as usize;
 
+    // get RGB values, scaling it by sample size, and gamma correct them
     let r = f64::sqrt(SCALE * color.r);
     let g = f64::sqrt(SCALE * color.g);
     let b = f64::sqrt(SCALE * color.b);
@@ -190,26 +191,34 @@ fn main() {
 
 
         for y in (0..IMAGE_HEIGHT).rev() {
+            // TODO find a way to share a World so we don't create it for each line
             let world = create_world(seed);
 
             let tx2 = tx.clone();
             pool.execute(move|| {
                 for x in 0..IMAGE_WIDTH {
                     let pixel_color = compute_pixel(x, y, cam, &world);
+                    // Send pixel color to the mpsc channel
                     tx2.send((x,y, pixel_color)).unwrap();
                 }
             });
         }
 
-
+        // Receive pixels color until we have them all
         let mut pixel_count: u32 = 0;
         for received in &rx {
+
+            // Get pixel position and color, and write it to our buffer
             let (tx, ty, tc) = received;
+            put_pixel(&mut buffer, tx, ty, tc);
+
+
             pixel_count+=1;
             if pixel_count == IMAGE_WIDTH*IMAGE_HEIGHT {
+                // We received everything
                 break;
             }
-            put_pixel(&mut buffer, tx, ty, tc);
+
             if (pixel_count%IMAGE_HEIGHT)==0 {
                 print_progress(term_w, (pixel_count+1) as f64 / (IMAGE_WIDTH*IMAGE_HEIGHT) as f64);
             }
