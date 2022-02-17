@@ -31,10 +31,11 @@ use crate::camera::Camera;
 const ASPECT_RATIO: f64 = 4.0 / 3.0;
 const IMAGE_WIDTH:  u32 = 800;
 const IMAGE_HEIGHT: u32 = ((IMAGE_WIDTH as f64)/ASPECT_RATIO) as u32;
-const MAX_DEPTH: u32 = 50;
+const MAX_DEPTH: u32 = 50;           // Maximum ray depth
 const SAMPLES_PER_PIXEL: u32  = 25;
 const SCALE: f64    = 1.0 / (SAMPLES_PER_PIXEL as f64);
 
+// Write our buffer to the disk in any fileformat based on the extension
 fn write_image(filename: &str, w: u32, h: u32, buffer: &mut [Color])  {
     let mut buf = vec![0; buffer.len()*3];
     for i in 0..buffer.len()-3 {
@@ -46,6 +47,7 @@ fn write_image(filename: &str, w: u32, h: u32, buffer: &mut [Color])  {
     println!("Saved {}", filename);
 }
 
+// Put pixel in our buffer
 fn put_pixel(buffer: &mut [Color], x: u32, y: u32, color: Color) {
     let offset: usize = (x+((IMAGE_HEIGHT-1)-y)*IMAGE_WIDTH) as usize;
 
@@ -57,18 +59,22 @@ fn put_pixel(buffer: &mut [Color], x: u32, y: u32, color: Color) {
     buffer[offset]    = Color::new(r, g, b);
 }
 
-
+// Get the color of a ray, recursive
 fn ray_color(r: Ray, world: &World, depth: u32) -> Color {
+
+    // Depth limit reached, return black and send no more rays
     if depth <= 0 {
         return Color::new(0.0,0.0,0.0);
     }
 
+    // Hit, get scattering informations
     if let Some(rec) = world.hit(r, 0.01, f64::INFINITY) {
         if let Some((attenuation, scattered)) = rec.mat.scatter(r, &rec) {
             attenuation * ray_color(scattered, world, depth - 1)
         } else {
             Color::new(0.0, 0.0, 0.0)
         }
+    // No hit, get sky color
     } else {
         let unit_direction = r.direction().unit();
         let t = 0.5 * (unit_direction.y() + 1.0);
@@ -87,24 +93,28 @@ fn print_progress(width: usize, progress: f64) {
     }
 }
 
+// Create world, which is a Hittable trait
 fn create_world(seed: u64) -> World {
 
     fastrand::seed(seed);
     let mat_lambert = Arc::new(Lambertian::new(Color::new(0.1, 0.2, 0.5)));
-    let mat_ground = Arc::new(Lambertian::new(Color::new(0.5, 0.5, 0.5)));
-    let mat_metal = Arc::new(Metal::new(Color::new(0.8, 0.6, 0.2), 0.0));
-    let mat_glass = Arc::new(Dielectric::new(1.5));
+    let mat_ground  = Arc::new(Lambertian::new(Color::new(0.5, 0.5, 0.5)));
+    let mat_metal   = Arc::new(Metal::new(Color::new(0.8, 0.6, 0.2), 0.0));
+    let mat_glass   = Arc::new(Dielectric::new(1.5));
 
     let mut world = World::new();
 
+    // Big sphere as the ground
     world.push(Box::new(Sphere::new(Vec3::new(0.0, -1000.0, -0.0), 1000.0, mat_ground)));
-
+    // Blue sphere
     world.push(Box::new(Sphere::new(Vec3::new(-4.0, 1.0, 0.0), 1.0, mat_lambert)));
+    // Metallic sphere
     world.push(Box::new(Sphere::new(Vec3::new(4.0, 1.0, 0.0), 1.0, mat_metal)));
-
+    // Hollow glass sphere
     world.push(Box::new(Sphere::new(Vec3::new(0.0, 1.0, 0.0), 1.0, mat_glass.clone())));
     world.push(Box::new(Sphere::new(Vec3::new(0.0, 1.0, 0.0), -0.95, mat_glass.clone())));
 
+    // Small spheres on the ground
     for a in -11..11 {
         for b in -11..11 {
             let choose_mat: f64 = fastrand::f64();
@@ -127,7 +137,7 @@ fn create_world(seed: u64) -> World {
     world
 }
 
-
+// Compute a pixel, using SAMPLES_PER_PIXEL samples
 fn compute_pixel(x: u32, y: u32, cam: Camera, world: &World) -> Color {
 
     let rng = fastrand::Rng::new();
@@ -142,7 +152,6 @@ fn compute_pixel(x: u32, y: u32, cam: Camera, world: &World) -> Color {
     }
 
     pixel_color
-
 }
 
 fn main() {
