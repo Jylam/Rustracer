@@ -1,5 +1,5 @@
 #![allow(non_snake_case)]
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::Instant;
 use std::io::{self, Write};
 use std::sync::Arc;
 use threadpool::ThreadPool;
@@ -182,7 +182,7 @@ fn main() {
     let sz: f64 = 3.0;
     for i in 0..1 {
 
-        let start_time = SystemTime::now();
+        let start_time = Instant::now();
 
         angle+=3.6;
         let cx = sx * f64::cos(angle.to_radians()) - sz*f64::sin(angle.to_radians());
@@ -211,16 +211,15 @@ fn main() {
                 break;
             }
             put_pixel(&mut buffer, tx, ty, tc);
-            print_progress(term_w, (pixel_count+1) as f64 / (IMAGE_WIDTH*IMAGE_HEIGHT) as f64);
+            if (pixel_count%IMAGE_HEIGHT)==0 {
+                print_progress(term_w, (pixel_count+1) as f64 / (IMAGE_WIDTH*IMAGE_HEIGHT) as f64);
+            }
         }
 
-        let end_time = SystemTime::now();
-
-        let s = start_time.duration_since(UNIX_EPOCH).expect("Time went backwards");
-        let e = end_time.duration_since(UNIX_EPOCH).expect("Time went backwards");
-
-        println!("{:?}", e-s);
         println!("");
+
+        let elapsed_time = start_time.elapsed();
+        println!("{}s", ((elapsed_time.as_secs()*1000)+elapsed_time.subsec_millis() as u64) as f64 / 1000.0);
         write_image(&format!("test_{:04}.png", i).to_string(), IMAGE_WIDTH, IMAGE_HEIGHT, &mut buffer);
 
     }
