@@ -29,7 +29,7 @@ mod camera;
 use crate::camera::Camera;
 
 const ASPECT_RATIO: f64 = 4.0 / 3.0;
-const IMAGE_WIDTH:  u32 = 800;
+const IMAGE_WIDTH:  u32 = 400;
 const IMAGE_HEIGHT: u32 = ((IMAGE_WIDTH as f64)/ASPECT_RATIO) as u32;
 const MAX_DEPTH: u32 = 50;           // Maximum ray depth
 const SAMPLES_PER_PIXEL: u32  = 25;
@@ -57,30 +57,6 @@ fn put_pixel(buffer: &mut [Color], x: u32, y: u32, color: Color) {
     let b = f64::sqrt(SCALE * color.b);
 
     buffer[offset]    = Color::new(r, g, b);
-}
-
-// Get the color of a ray, recursive
-fn ray_color(r: Ray, world: &World, depth: u32) -> Color {
-
-    // Depth limit reached, return black and send no more rays
-    if depth <= 0 {
-        return Color::new(0.0,0.0,0.0);
-    }
-
-    // Hit, get scattering informations
-    if let Some(rec) = world.hit(r, 0.01, f64::INFINITY) {
-        if let Some((attenuation, scattered)) = rec.mat.scatter(r, &rec) {
-            attenuation * ray_color(scattered, world, depth - 1)
-        } else {
-            Color::new(0.0, 0.0, 0.0)
-        }
-    // No hit, get sky color
-    } else {
-        let unit_direction = r.direction().unit();
-        let t = 0.5 * (unit_direction.y() + 1.0);
-        Color::new(1.0, 1.0, 1.0)* (1.0 - t) +  Color::new(0.5, 0.7, 1.0) * t
-    }
-
 }
 
 fn print_progress(width: usize, progress: f64) {
@@ -137,6 +113,29 @@ fn create_world(seed: u64) -> World {
     world
 }
 
+// Get the color of a ray, recursive
+fn ray_color(r: Ray, world: &World, depth: u32) -> Color {
+
+    // Depth limit reached, return black and send no more rays
+    if depth <= 0 {
+        return Color::new(0.0,0.0,0.0);
+    }
+
+    // Hit, get scattering informations
+    if let Some(rec) = world.hit(r, 0.01, f64::INFINITY) {
+        if let Some((attenuation, scattered)) = rec.mat.scatter(r, &rec) {
+            attenuation * ray_color(scattered, world, depth - 1)
+        } else {
+            Color::new(0.0, 0.0, 0.0)
+        }
+    // No hit, get sky color
+    } else {
+        let unit_direction = r.direction().unit();
+        let t = 0.5 * (unit_direction.y() + 1.0);
+        Color::new(1.0, 1.0, 1.0)* (1.0 - t) +  Color::new(0.5, 0.7, 1.0) * t
+    }
+}
+
 // Compute a pixel, using SAMPLES_PER_PIXEL samples
 fn compute_pixel(x: u32, y: u32, cam: Camera, world: &World) -> Color {
 
@@ -171,6 +170,7 @@ fn main() {
     println!("Image {}x{}", IMAGE_WIDTH, IMAGE_HEIGHT);
 
 
+    // Get terminal size for the progress bar
     let term_w: usize;
     if let Some((w, _h)) = term_size::dimensions() {
         term_w = w;
@@ -181,7 +181,6 @@ fn main() {
 
     let n_workers = 6;
     let pool = ThreadPool::new(n_workers);
-    let (tx, rx) = mpsc::channel();
 
 
     let seed: u64 = 7;
@@ -198,6 +197,7 @@ fn main() {
         let cz = sx * f64::sin(angle.to_radians()) - sz*f64::cos(angle.to_radians());
         cam.set_position(Vec3::new(cx, 2.0, cz));
 
+        let (tx, rx) = mpsc::channel();
 
         for y in (0..IMAGE_HEIGHT).rev() {
             // TODO find a way to share a World so we don't create it for each line
@@ -212,8 +212,9 @@ fn main() {
                 }
             });
         }
-
+        drop(tx);
         // Receive pixels color until we have them all
+        // Channel will close the connection as soon as all the tx.clones are closed
         let mut pixel_count: u32 = 0;
         for received in &rx {
 
@@ -221,13 +222,7 @@ fn main() {
             let (tx, ty, tc) = received;
             put_pixel(&mut buffer, tx, ty, tc);
 
-
             pixel_count+=1;
-            if pixel_count == IMAGE_WIDTH*IMAGE_HEIGHT {
-                // We received everything
-                break;
-            }
-
             if (pixel_count%IMAGE_HEIGHT)==0 {
                 print_progress(term_w, (pixel_count+1) as f64 / (IMAGE_WIDTH*IMAGE_HEIGHT) as f64);
             }
