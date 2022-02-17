@@ -2,7 +2,6 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::io::{self, Write};
 use std::sync::Arc;
-use std::thread;
 use threadpool::ThreadPool;
 use std::sync::mpsc;
 use rand::Rng;
@@ -31,7 +30,7 @@ mod camera;
 use crate::camera::Camera;
 
 const ASPECT_RATIO: f64 = 4.0 / 3.0;
-const IMAGE_WIDTH:  u32 = 400;
+const IMAGE_WIDTH:  u32 = 800;
 const IMAGE_HEIGHT: u32 = ((IMAGE_WIDTH as f64)/ASPECT_RATIO) as u32;
 const MAX_DEPTH: u32 = 50;
 const SAMPLES_PER_PIXEL: u32  = 10;
@@ -110,22 +109,40 @@ fn create_world(seed: u64) -> World {
         for b in -11..11 {
             let choose_mat: f64 = fastrand::f64();
             let center: Vec3 = Vec3::new(a as f64 + 0.9*fastrand::f64(), 0.2, b as f64 + 0.9*fastrand::f64());
-              if (center - Vec3::new(4.0, 0.2, 0.0)).length() > 0.9 {
+            if (center - Vec3::new(4.0, 0.2, 0.0)).length() > 0.9 {
 
-                  if choose_mat < 0.8 {
+                if choose_mat < 0.8 {
                     let sphere_material = Arc::new(Lambertian::new(Color::new(fastrand::f64(), fastrand::f64(), fastrand::f64())));
                     world.push(Box::new(Sphere::new(center, 0.2, sphere_material)));
-                  } else if choose_mat < 0.95 {
+                } else if choose_mat < 0.95 {
                     let sphere_material = Arc::new(Metal::new(Color::new(fastrand::f64(), fastrand::f64(), fastrand::f64()), 0.0));
                     world.push(Box::new(Sphere::new(center, 0.2, sphere_material)));
-                  } else {
+                } else {
                     let sphere_material = Arc::new(Dielectric::new(1.5));
                     world.push(Box::new(Sphere::new(center, 0.2, sphere_material)));
-                  }
-              }
+                }
+            }
         }
     }
     world
+}
+
+
+fn compute_pixel(x: u32, y: u32, cam: Camera, world: &World) -> Color {
+
+    let mut rng = rand::thread_rng();
+    let mut pixel_color: Color = Color::new(0.0, 0.0, 0.0);
+
+    for _s in 0..SAMPLES_PER_PIXEL {
+        let u = (x as f64 + rng.gen_range(0.0..1.0)) / (IMAGE_WIDTH-1) as f64;
+        let v = (y as f64 + rng.gen_range(0.0..1.0)) / (IMAGE_HEIGHT-1) as f64;
+        let r: Ray = cam.get_ray(u, v);
+        let color = ray_color(r, world, MAX_DEPTH);
+        pixel_color = pixel_color + color;
+    }
+
+    pixel_color
+
 }
 
 fn main() {
@@ -138,8 +155,8 @@ fn main() {
 
 
     let mut cam = Camera::new(lookfrom, lookat, vup, 20.0, ASPECT_RATIO,
-                          0.1, // Aperture
-                          10.0); // Dist to focus
+                              0.1, // Aperture
+                              10.0); // Dist to focus
 
 
     println!("Image {}x{}", IMAGE_WIDTH, IMAGE_HEIGHT);
@@ -171,26 +188,21 @@ fn main() {
         let cx = sx * f64::cos(angle.to_radians()) - sz*f64::sin(angle.to_radians());
         let cz = sx * f64::sin(angle.to_radians()) - sz*f64::cos(angle.to_radians());
         cam.set_position(Vec3::new(cx, 2.0, cz));
+
+
         for y in (0..IMAGE_HEIGHT).rev() {
             let world = create_world(seed);
 
             let tx2 = tx.clone();
             pool.execute(move|| {
                 for x in 0..IMAGE_WIDTH {
-
-                    let mut rng = rand::thread_rng();
-                    let mut pixel_color: Color = Color::new(0.0, 0.0, 0.0);
-                    for _s in 0..SAMPLES_PER_PIXEL {
-                        let u = (x as f64 + rng.gen_range(0.0..1.0)) / (IMAGE_WIDTH-1) as f64;
-                        let v = (y as f64 + rng.gen_range(0.0..1.0)) / (IMAGE_HEIGHT-1) as f64;
-                        let r: Ray = cam.clone().get_ray(u, v);
-                        let color = ray_color(r, &world, MAX_DEPTH);
-                        pixel_color = pixel_color + color;
-                    }
+                    let pixel_color = compute_pixel(x, y, cam, &world);
                     tx2.send((x,y, pixel_color)).unwrap();
                 }
             });
         }
+
+
         let mut pixel_count: u32 = 0;
         for received in &rx {
             let (tx, ty, tc) = received;
@@ -201,6 +213,7 @@ fn main() {
             put_pixel(&mut buffer, tx, ty, tc);
             print_progress(term_w, (pixel_count+1) as f64 / (IMAGE_WIDTH*IMAGE_HEIGHT) as f64);
         }
+
         let end_time = SystemTime::now();
 
         let s = start_time.duration_since(UNIX_EPOCH).expect("Time went backwards");
