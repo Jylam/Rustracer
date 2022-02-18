@@ -29,10 +29,10 @@ mod camera;
 use crate::camera::Camera;
 
 const ASPECT_RATIO: f64 = 4.0 / 3.0;
-const IMAGE_WIDTH:  u32 = 400;
+const IMAGE_WIDTH:  u32 = 1600;
 const IMAGE_HEIGHT: u32 = ((IMAGE_WIDTH as f64)/ASPECT_RATIO) as u32;
 const MAX_DEPTH: u32 = 50;           // Maximum ray depth
-const SAMPLES_PER_PIXEL: u32  = 25;
+const SAMPLES_PER_PIXEL: u32  = 100;
 const SCALE: f64    = 1.0 / (SAMPLES_PER_PIXEL as f64);
 
 // Write our buffer to the disk in any fileformat based on the extension
@@ -128,7 +128,7 @@ fn ray_color(r: Ray, world: &World, depth: u32) -> Color {
         } else {
             Color::new(0.0, 0.0, 0.0)
         }
-    // No hit, get sky color
+        // No hit, get sky color
     } else {
         let unit_direction = r.direction().unit();
         let t = 0.5 * (unit_direction.y() + 1.0);
@@ -157,15 +157,6 @@ fn main() {
 
     let mut buffer: Vec<Color> = vec![Color{r: 0.0, g:0.0, b:0.0}; (IMAGE_WIDTH*IMAGE_HEIGHT) as usize];
 
-    let lookfrom: Vec3 = Vec3::new(13.0,2.0,3.0);
-    let lookat: Vec3 = Vec3::new(0.0,0.0,0.0);
-    let vup: Vec3 = Vec3::new(0.0,1.0,0.0);
-
-
-    let mut cam = Camera::new(lookfrom, lookat, vup, 20.0, ASPECT_RATIO,
-                              0.1, // Aperture
-                              10.0); // Dist to focus
-
 
     println!("Image {}x{}", IMAGE_WIDTH, IMAGE_HEIGHT);
 
@@ -179,23 +170,41 @@ fn main() {
     }
 
 
-    let n_workers = 6;
+    let n_workers = 4;
     let pool = ThreadPool::new(n_workers);
 
 
     let seed: u64 = 7;
 
-    let mut angle: f64 = 0.0;
-    let sx: f64 = 15.0;
-    let sz: f64 = 3.0;
-    for i in 0..1 {
+    let lookfrom: Vec3 = Vec3::new(10.0,2.0,10.0);
+    let lookat: Vec3 = Vec3::new(0.0,0.0,0.0);
+    let vup: Vec3 = Vec3::new(0.0,1.0,0.0);
 
+
+    let mut cam = Camera::new(lookfrom, lookat, vup, 20.0, ASPECT_RATIO,
+                              0.1, // Aperture
+                              15.0); // Dist to focus
+
+
+    let sx: f64 = 10.0;
+    let sz: f64 = 10.0;
+
+    let start_image = 0;
+    let end_image = 1;
+
+    let angle_i: f64 = 360.0 / end_image as f64;
+
+    let mut angle: f64 = angle_i*start_image as f64;
+
+    for i in start_image..end_image {
+
+        Ray::reset_count();
         let start_time = Instant::now();
 
-        angle+=3.6;
         let cx = sx * f64::cos(angle.to_radians()) - sz*f64::sin(angle.to_radians());
-        let cz = sx * f64::sin(angle.to_radians()) - sz*f64::cos(angle.to_radians());
+        let cz = sx * f64::sin(angle.to_radians()) + sz*f64::cos(angle.to_radians());
         cam.set_position(Vec3::new(cx, 2.0, cz));
+
 
         let (tx, rx) = mpsc::channel();
 
@@ -232,8 +241,10 @@ fn main() {
 
         let elapsed_time = start_time.elapsed();
         println!("{}s", ((elapsed_time.as_secs()*1000)+elapsed_time.subsec_millis() as u64) as f64 / 1000.0);
+        println!("Ray count : {}", Ray::get_count());
         write_image(&format!("test_{:04}.png", i).to_string(), IMAGE_WIDTH, IMAGE_HEIGHT, &mut buffer);
 
+        angle+=angle_i;
     }
 
 

@@ -1,5 +1,9 @@
 #![allow(dead_code)]
+
 use crate::vec3::Vec3;
+use std::sync::atomic::{AtomicU64, Ordering};
+
+static RAY_COUNT: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Debug, Copy, Clone)]
 pub struct Ray {
@@ -22,7 +26,15 @@ impl Ray {
 
     // Operations
     pub fn at(&self, t: f64) -> Vec3 {
+        RAY_COUNT.store(RAY_COUNT.load(Ordering::Relaxed)+1, Ordering::Relaxed);
+
         self.orig + (self.dir*t)
+    }
+    pub fn get_count() -> u64 {
+        RAY_COUNT.load(Ordering::Relaxed)
+    }
+    pub fn reset_count() {
+        RAY_COUNT.store(0, Ordering::Relaxed);
     }
 
 }
